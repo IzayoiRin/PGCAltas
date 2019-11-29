@@ -4,8 +4,8 @@ CONSTANT for calculating IMPORTANCE AREA
 from sklearn.ensemble import RandomForestClassifier
 
 DATA_DIR = 'GSE120963'
-FILE_TYPE = r'txt'
-PKL_FILE = 'OBJGSE12096319112813.pkl'
+FILE_TYPE = r'\.txt'
+PKL_FILE = 'OBJGSE12096319112916.pkl'
 DIMENSIONS = ['time', 'loc']
 
 

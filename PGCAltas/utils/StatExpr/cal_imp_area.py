@@ -13,47 +13,12 @@ import sklearn.feature_selection as fs
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
-from .DataReader.reader import DataReaderBase
+from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
 from .StaUtills.Pfeatures import GenericFeaturesProcess
 from .const import package as c
 
 
 logger = logging.getLogger("django")
-
-
-class ReaderFromDimensions(DataReaderBase):
-
-    def __init__(self, dirname, filename):
-        super(ReaderFromDimensions, self).__init__(dirname, filename)
-        self.samples = list()
-        self.features = None
-        self.labels_list_t = list()
-        self.labels_list_l = list()
-        self.llabels = None
-        self.tlabels = None
-        delattr(self, 'labels')
-        delattr(self, 'labels_list')
-
-    def workon(self, f_name, r_dframe):
-        all_samples = r_dframe.columns
-        pattern = re.compile(r"^\d(E?P)$")
-        samples = [s for s in all_samples if re.match(pattern, s)]
-        if not samples:
-            return
-        self.samples.extend(samples)
-        locations = np.array([re.sub(pattern, lambda x: x.groups()[0], s) for s in samples])
-        times = np.array([f_name.split('\\')[-1][1:4] for _ in range(len(samples))])
-        df = r_dframe.loc[:, samples].T
-        self.labels_list_l.append(locations)
-        self.labels_list_t.append(times)
-        if self.features is None:
-            self.features = df.columns.to_numpy()
-        return df.to_numpy()
-
-    def get_ds_and_ls(self):
-        self.dataset = np.concatenate(self.dataframes, axis=0)
-        self.llabels = np.hstack(self.labels_list_l)
-        self.tlabels = np.hstack(self.labels_list_t)
 
 
 class PerProcessedMixin(object):
@@ -159,71 +124,119 @@ class SLTFeatures(GenericFeaturesProcess, FeaturesScreenMixin):
         return self
 
 
-def importance_mtx(reader, dimension, split_tt=False):
-    ppf = PPFeatures().init_from_data(reader.dataset, (reader.tlabels, reader.llabels))
-    ppf('ONEHOT', 'IMPUTE', 'STANDARDIZE', dim=dimension)
-    dataset, tlabels, llabels, features = ppf.dataset, ppf.labels[0], ppf.labels[1], reader.features
-    s = SLTFeatures().init_from_data(dataset, (tlabels, llabels))
-    # RDF_PARAMS in const.py
-    s("RANDOM_FOREST",
-      mparams=(c.RDF_PARAMS,),
-      dim=dimension, split_tt=split_tt)
-    s.dumps(open(os.path.join(reader.pkl_path, 'RDF%sClassifier.pkl' % dimension.title()), 'wb'))
-    mtx = np.vstack([s.asc_order, features[s.asc_order], s.importance_]).T
-    print('%s: Acc=%.2f' % (dimension.upper(), s.acc_))
-    return mtx
+class EIMProcess(object):
 
+    __READER_FLUSHED = False
 
-def df_area(pkl):
-    mtx = pickle.load(open(pkl, 'rb'))   # type: np.ndarray
-    s = mtx[:, 2]
-    ret = list()
-    sum_area = 0.0
-    for i in s:
-        sum_area += i
-        ret.append(sum_area)
-    sum_area = np.array(ret, dtype=np.float64).reshape(-1, 1)
-    mtx = np.hstack([mtx, sum_area])
-    df = pd.DataFrame(mtx, columns=['IDX', 'GENE', 'IMP', 'AREA'])
-    print("Matrix: R[%s * %s]" % mtx.shape)
-    return df
+    data_reader_class = DataReader
 
+    preprocessor_class = PPFeatures
+    preprocesses = ['ONEHOT', 'IMPUTE', 'STANDARDIZE']
 
-__READER_FLUSHED = False
+    select_processor_class = SLTFeatures
+    select_process = "RANDOM_FOREST"
+    select_process_params = (c.RDF_PARAMS,)
 
+    def __init__(self, filename, dirname=None, pklfile=None, dims=None, **rdparams):
+        self.filename = filename + c.FILE_TYPE + r'$'
+        self.dirname = dirname or c.DATA_DIR
+        self.pklfile = pklfile or c.PKL_FILE
+        self.rdparams = rdparams
 
-def execute_eim_process():
-    """
-    Calculate the Equ-importance Integral Matrix from dataReader built across raw_data or pkl_reader
-    Output:
-        .\pickles
-            \OBJ*.pkl
-            \RDF*Classifier.pkl & \RDF*Flow.pkl & RDF*Score.pkl
-        .\texts\
-            RDF*Flow.txt
-    """
-    if __READER_FLUSHED:
-        logger.warning('Reader Flushed')
-        reader = ReaderFromDimensions(c.DATA_DIR, r'.*?\.' + c.FILE_TYPE + r'$')
-        reader.read(header=0, sep='\t', index_col=0).get_ds_and_ls()
-        reader.dumps_as_pickle()
-        logger.info('Dumps Ready')
-    elif c.PKL_FILE:
-        logger.info('Loading from: %s' % c.PKL_FILE)
-        reader = ReaderFromDimensions.init_from_pickle(c.DATA_DIR, c.PKL_FILE)
-    else:
-        return
+        self.dimensions = dims or c.DIMENSIONS
 
-    logger.info('%s Complete Ready' % reader)
-    for dim in c.DIMENSIONS:
-        logger.info("Lady's Calculating Importance ...")
-        mtx = importance_mtx(reader, dim, split_tt=True)
-        mtx_p = os.path.join(reader.pkl_path, 'RDF%sScore.pkl' % dim.title())
-        pickle.dump(mtx, open(mtx_p, 'wb'))
-        logger.info("Lady's Calculating Area Curve ...")
-        df = df_area(mtx_p)
-        df_pp = os.path.join(reader.pkl_path, 'RDF%sFlow.pkl' % dim.title())
-        df_pc = os.path.join(reader.csv_path, 'RDF%sFlow.txt' % dim.title())
-        df.to_pickle(df_pp)
-        df.to_csv(df_pc, sep='\t', header=True, index=False)
-    logger.info('CAVED!!!')
+        self.reader = None
+        self.ppf = None
+        self.slp = None
+
+    def build_data_reader(self):
+        reader = None
+        if self.__READER_FLUSHED:
+            logger.warning('Reader Flushed')
+            reader = self.data_reader_class(self.dirname, self.filename, **self.rdparams)
+            reader.read(header=0, sep='\t', index_col=0).get_ds_and_ls()
+            reader.dumps_as_pickle()
+            logger.info('Dumps Ready')
+        elif self.pklfile:
+            logger.info('Loading from: %s' % self.pklfile)
+            reader = self.data_reader_class.init_from_pickle(self.dirname, self.pklfile)
+
+        return reader
+
+    def importance_mtx(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def _imp_mtx_processing(self, features, dim):
+        self.slp.dumps(
+            open(os.path.join(self.reader.pkl_path, 'RDF%sClassifier.pkl' % dim.title()), 'wb')
+        )
+        mtx = np.vstack([self.slp.asc_order, features[self.slp.asc_order], self.slp.importance_]).T
+        print('%s: Acc=%.2f' % (dim.upper(), self.slp.acc_))
+        return mtx
+
+    def get_preprocessor_class(self):
+        return self.preprocessor_class
+
+    def get_preprocessor(self):
+        ppf_cls = self.get_preprocessor_class()
+        ppf = ppf_cls().init_from_data(self.reader.dataset, self.reader.labels)
+        return ppf
+
+    def get_select_processor_class(self):
+        return self.select_processor_class
+
+    def get_select_processor(self):
+        slp_cls = self.get_select_processor_class()
+        slp = slp_cls().init_from_data(self.ppf.dataset, self.ppf.labels)
+        return slp
+
+    @staticmethod
+    def df_area(pkl):
+        mtx = pickle.load(open(pkl, 'rb'))  # type: np.ndarray
+        s = mtx[:, 2]
+        ret = list()
+        sum_area = 0.0
+        for i in s:
+            sum_area += i
+            ret.append(sum_area)
+        sum_area = np.array(ret, dtype=np.float64).reshape(-1, 1)
+        mtx = np.hstack([mtx, sum_area])
+        df = pd.DataFrame(mtx, columns=['IDX', 'GENE', 'IMP', 'AREA'])
+        print("Matrix: R[%s * %s]" % mtx.shape)
+        return df
+
+    def flushed(self):
+        self.__READER_FLUSHED = True
+
+    def execute_eim_process(self):
+        """
+        Calculate the Equ-importance Integral Matrix from dataReader built across raw_data or pkl_reader
+        Output:
+            .\pickles
+                \OBJ*.pkl
+                \RDF*Classifier.pkl & \RDF*Flow.pkl & RDF*Score.pkl
+            .\texts\
+                RDF*Flow.txt
+        """
+        self.reader = self.build_data_reader()
+        if self.reader is None:
+            raise ReaderLoadError("Can't load dataReader: %s" % self.data_reader_class.__name__)
+
+        logger.info('%s Complete Ready' % self.reader)
+
+        for dim in self.dimensions:
+            logger.info("Lady's Calculating Importance ...")
+
+            mtx = self.importance_mtx(dim, split_tt=True)
+            mtx_p = os.path.join(self.reader.pkl_path, 'RDF%sScore.pkl' % dim.title())
+            pickle.dump(mtx, open(mtx_p, 'wb'))
+
+            logger.info("Lady's Calculating Area Curve ...")
+
+            df = self.df_area(mtx_p)
+            df_pp = os.path.join(self.reader.pkl_path, 'RDF%sFlow.pkl' % dim.title())
+            df_pc = os.path.join(self.reader.csv_path, 'RDF%sFlow.txt' % dim.title())
+            df.to_pickle(df_pp)
+            df.to_csv(df_pc, sep='\t', header=True, index=False)
+
+        logger.info('CAVED!!!')

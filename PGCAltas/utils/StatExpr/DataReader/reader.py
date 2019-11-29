@@ -16,6 +16,10 @@ class DataFrameFitError(Exception):
     pass
 
 
+class ReaderLoadError(Exception):
+    pass
+
+
 class DataReaderBase(object):
     """
     Examples:
@@ -132,9 +136,11 @@ class DataReaderBase(object):
         raise NotImplementedError
 
     def __str__(self):
-        return "dataReader@{name}_R[{row} * {col}]".format(name=self.path.split('/')[-1],
-                                                                row=self.dataset.shape[0],
-                                                                col=self.dataset.shape[1])
+        return "dataReader@{name}_Non_data" \
+            if self.dataset is [] \
+            else "dataReader@{name}_R[{row} * {col}]".format(name=self.path.split('/')[-1],
+                                                             row=self.dataset.shape[0],
+                                                             col=self.dataset.shape[1])
 
 
 class DataReader(DataReaderBase):
@@ -161,18 +167,16 @@ class DataReader(DataReaderBase):
         self.features = None
 
     def workon(self, f_name, r_dframe):
-        all_samples = r_dframe.columns
-        pattern = re.compile(r"^\d(E?P)$")
-        old_samples = [s for s in all_samples if re.match(pattern, s)]
-        if not old_samples:
-            return
-        samples = [re.sub(pattern, lambda x: x.groups()[0], s) for s in old_samples]
-        df = r_dframe.loc[:, old_samples].T
-        df = df.rename(index=dict(zip(old_samples, samples)))
-        self.labels_list.append(df.index.to_numpy())
+        """
+        resolute dataset and labelset from file_name and row_dataframe
+        :param f_name: file_path
+        :param r_dframe: N * m
+        :return: Design Matrix m * N
+        """
         if self.features is None:
-            self.features = df.columns.to_numpy()
-        return df
+            self.features = r_dframe.index.to_numpy()
+        self.labels_list.append(r_dframe.columns.to_numpy())
+        return r_dframe.to_numpy().T
 
     def get_ds_and_ls(self):
         self.dataset = np.concatenate(self.dataframes, axis=0)
