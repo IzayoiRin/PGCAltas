@@ -9,6 +9,9 @@ FILE_TYPE = r'\.txt'
 PKL_FILE = ''
 DIMENSIONS = ['binomial', ]
 
+NEG = r"^.*NEG"
+POS = r"^.*POS"
+
 """
 CONSTANT for analysis IMPORTANCE AREA
 """

@@ -21,7 +21,7 @@ class GSEBinDimensionEIMProcess(GenericEIMProcess):
         ppf = ppf_cls.init_from_data(self.reader.dataset, (self.reader.tlabels, self.reader.llabels))
         return ppf
 
-    def get_select_processor(self):
+    def get_screen_processor(self):
         slp_cls = self.get_select_processor_class()
         dataset, tlabels, llabels = self.ppf.dataset, self.ppf.labels[0], self.ppf.labels[1],
         slp = slp_cls().init_from_data(dataset, (tlabels, llabels))
@@ -31,7 +31,7 @@ class GSEBinDimensionEIMProcess(GenericEIMProcess):
         self.ppf = self.get_preprocessor()
         self.ppf(self.preprocesses, dim=dimension)
         features = self.reader.features
-        self.slp = self.get_select_processor()
+        self.slp = self.get_screen_processor()
         # RDF_PARAMS in const.py
         self.slp(self.screen_process,
                  mparams=self.screen_process_params,

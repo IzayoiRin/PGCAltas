@@ -156,8 +156,7 @@ class BasicPreProcessMixin(object):
         return self
 
     def fit_encode(self, fit, *args, **kwargs):
-        self.labels = [fit(ls.reshape(-1, 1), *args, **kwargs).toarray()
-                       for ls in self.labels]
+        self.labels = fit(self.labels.reshape(-1, 1)).toarray()
         return self
 
 
@@ -185,9 +184,9 @@ class FeaturesBasicPreProcessor(GenericFeaturesProcess, BasicPreProcessMixin):
             raise MessProcessesError("wrong processes queue")
         self.kwargs = kwargs
         # fit each labels as ONE HOT CODE
-        self.fit_encode(method[0])
+        self.fit_encode(method[0], mparams=({'categories': self.kwargs.get('categories', None)}, ))
         # replace NA with most frequent value then dimensionless
-        self.fit_na(method[1], mparams=({'strategy': 'mean'},)).\
+        self.fit_na(method[1], mparams=({'strategy': self.kwargs.get('strategy', 'mean')}, )).\
             fit_dimensionless(method[2])
 
 

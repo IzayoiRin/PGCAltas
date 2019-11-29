@@ -1,0 +1,11 @@
+Dir_Structure:
+
+-- dataset
+    -- data_dir
+        -- pickles
+            -- pkl_files(.pkl)
+        -- text
+            -- csv_files(.txt / .csv)
+        -- processed
+            -- use to save results
+        -- raw_data_files

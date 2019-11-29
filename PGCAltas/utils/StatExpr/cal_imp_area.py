@@ -77,7 +77,7 @@ class GenericEIMProcess(object):
     def get_select_processor_class(self):
         return self.screen_processor_class
 
-    def get_select_processor(self):
+    def get_screen_processor(self):
         slp_cls = self.get_select_processor_class()
         slp = slp_cls().init_from_data(self.ppf.dataset, self.ppf.labels)
         return slp

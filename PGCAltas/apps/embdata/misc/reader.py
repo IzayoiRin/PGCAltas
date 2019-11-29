@@ -42,13 +42,3 @@ class BinomialDataReader(DataReader):
     def get_ds_and_ls(self):
         super().get_ds_and_ls()
         self.samples = np.hstack(self.samples_list)
-
-
-dname, fname, ftype = "EMTAB6967", r"^SVMsetGuider.*?_Expr.*", ".txt"
-neg_pa = r"^.*NEG"
-pos_pa = r"^.*POS"
-reader = BinomialDataReader(dname, fname + ftype,
-                            pos=pos_pa + ftype,
-                            neg=neg_pa + ftype)
-reader.read(index_col=0, header=0, sep="\t").get_ds_and_ls()
-print(reader.samples.shape)
