@@ -1,141 +1,32 @@
 import logging
-import re
 import os
 
 import numpy as np
 import pandas as pd
 import pickle
 
-import sklearn.preprocessing as pp
-import sklearn.impute as ipt
-import sklearn.ensemble as esb
-import sklearn.feature_selection as fs
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-
 from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
-from .StaUtills.Pfeatures import GenericFeaturesProcess
+from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.preprocessors import FeaturesBasicPreProcessor, \
+    FeaturesBasicScreenProcessor
+
 from .const import package as c
 
 
 logger = logging.getLogger("django")
 
 
-class PerProcessedMixin(object):
-
-    def fit_dimensionless(self, fit, label_dim, *args, **kwargs):
-        labels = self.get_labels(label_dim)
-        self.dataset = fit(self.dataset, labels, *args, **kwargs)
-        return self
-
-    def fit_na(self, fit, *args, **kwargs):
-        self.dataset = fit(self.dataset, *args, **kwargs)
-        return self
-
-    def fit_encode(self, fit, *args, **kwargs):
-        self.labels = [fit(ls.reshape(-1, 1), *args, **kwargs).toarray()
-                       for ls in self.labels]
-        return self
-
-
-class PPFeatures(GenericFeaturesProcess, PerProcessedMixin):
-
-    callfn = "fit_transform"
-
-    DIMENSIONLESS = {
-        "STANDARDIZE": pp.StandardScaler,
-        "MINMAX": pp.MinMaxScaler,
-        "NORMALIZE": pp.Normalizer
-    }
-
-    NA = {
-        # "mean", "median", "most_frequent", "constant"
-        "IMPUTE": ipt.SimpleImputer,
-    }
-
-    ENCODE = {
-        "ONEHOT": pp.OneHotEncoder,
-    }
-
-    def get_labels(self, label_dim):
-        label_dim = 0 if label_dim == 'time' else 1
-        return self.labels[label_dim]
-
-    def __call__(self, *method, dim=None):
-        # fit each labels as ONE HOT CODE
-        self.fit_encode(method[0])
-        # replace NA with most frequent value then dimensionless
-        self.fit_na(method[1], mparams=({'strategy': 'mean'},)).\
-            fit_dimensionless(method[2], dim)
-
-
-class FeaturesScreenMixin(object):
-
-    def fit_ensemble(self, fit, dim, split_tt):
-        xtr, ytr = self.dataset, self.get_labels(dim)
-        if split_tt:
-            xtr, xte, ytr, yte = self.train_or_test(dim)
-        fit.fit(xtr, ytr)
-        acc = accuracy_score(yte, fit.predict(xte)) if split_tt else 1.0
-        setattr(self, 'acc_', acc)
-        return fit
-
-    def cal_importance_rank(self):
-        fit = getattr(self, 'fit_', None)
-        if fit is None:
-            return
-        m, n = self.dataset.shape
-        improtances = fit.feature_importances_ * n   # type: np.ndarray
-        self.asc_order = improtances.argsort()
-        self.importance_ = improtances[self.asc_order]
-
-
-class SLTFeatures(GenericFeaturesProcess, FeaturesScreenMixin):
-
-    ENSEMBLE = {
-        "RANDOM_FOREST": esb.RandomForestClassifier
-    }
-
-    spilter = {'test_size': 0.3,
-               'random_state': 0}
-
-    selector = {
-        'RANDOM_FOREST': fs.SelectFromModel
-    }
-
-    def get_labels(self, label_dim):
-        label_dim = 0 if label_dim == 'time' else 1
-        return self.labels[label_dim]
-
-    def train_or_test(self, dim):
-        labels = self.get_labels(dim)
-        dataset = self.get_dataset()
-        return train_test_split(dataset, labels, **self.spilter)
-
-    def get_selector(self, method):
-        selector = self.selector.get(method, None)
-        return selector
-
-    def __call__(self, method, mparams=(), dim=None, split_tt=False):
-        # execute(self, method, *fargs, mparams=(), **fkwargs)
-        # func(self, fit, *fargs, **fkwargs)
-        self.fit_ = self.fit_ensemble(method, dim, split_tt, mparams=mparams)
-        self.cal_importance_rank()
-        return self
-
-
-class EIMProcess(object):
+class GenericEIMProcess(object):
 
     __READER_FLUSHED = False
 
     data_reader_class = DataReader
 
-    preprocessor_class = PPFeatures
+    preprocessor_class = FeaturesBasicPreProcessor
     preprocesses = ['ONEHOT', 'IMPUTE', 'STANDARDIZE']
 
-    select_processor_class = SLTFeatures
-    select_process = "RANDOM_FOREST"
-    select_process_params = (c.RDF_PARAMS,)
+    screen_processor_class = FeaturesBasicScreenProcessor
+    screen_process = "RANDOM_FOREST"
+    screen_process_params = (c.RDF_PARAMS,)
 
     def __init__(self, filename, dirname=None, pklfile=None, dims=None, **rdparams):
         self.filename = filename + c.FILE_TYPE + r'$'
@@ -155,7 +46,8 @@ class EIMProcess(object):
             logger.warning('Reader Flushed')
             reader = self.data_reader_class(self.dirname, self.filename, **self.rdparams)
             reader.read(header=0, sep='\t', index_col=0).get_ds_and_ls()
-            reader.dumps_as_pickle()
+            # flush the pkl_file address in memory cache
+            c.PKL_FILE = reader.dumps_as_pickle()
             logger.info('Dumps Ready')
         elif self.pklfile:
             logger.info('Loading from: %s' % self.pklfile)
@@ -183,7 +75,7 @@ class EIMProcess(object):
         return ppf
 
     def get_select_processor_class(self):
-        return self.select_processor_class
+        return self.screen_processor_class
 
     def get_select_processor(self):
         slp_cls = self.get_select_processor_class()

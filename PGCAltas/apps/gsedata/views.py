@@ -6,12 +6,12 @@ from gsedata.misc.features_select import GSEBinDimensionEIMProcess, GSEBinDimens
 
 
 def features_select():
-    # eim = GSEBinDimensionEIMProcess(r"^E.*")
-    # # dataReader Flushed
-    # eim.flushed()
-    # # Calculate Equ_importance Integral Matrix
-    # eim.execute_eim_process()
-    # # Get Analysis Handler
+    eim = GSEBinDimensionEIMProcess(r"^E.*")
+    # dataReader Flushed
+    eim.flushed()
+    # Calculate Equ_importance Integral Matrix
+    eim.execute_eim_process()
+    # Get Analysis Handler
     aly = GSEBinDimensionEIMAnalysis()
     anlysis_handler = aly.execute_eim_analysis
     # Get Selected Expression Matrix and Significant Score Matrix

@@ -1,0 +1,2 @@
+class MessProcessesError(Exception):
+    pass

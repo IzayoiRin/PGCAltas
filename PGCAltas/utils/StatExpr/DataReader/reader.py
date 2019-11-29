@@ -101,20 +101,21 @@ class DataReaderBase(object):
     def dumps_as_pickle(self, **pklkwargs):
         from datetime import datetime
         t = datetime.now().strftime('%y%m%d%H')
-
         if not pklkwargs:
-            p = os.path.join(self.pkl_path,
-                             'OBJ%s%s.pkl' % (self.path.split('/')[-1], t))
+            name = 'OBJ%s%s.pkl' % (self.path.split('/')[-1], t)
+            p = os.path.join(self.pkl_path, name)
             with open(p, 'wb') as f:
                 pickle.dump(self, f, -1)
             print('Done')
-            return
+            return p
 
         for attrname, pklname in pklkwargs.items():
-            p = os.path.join(self.pkl_path, '%s%s.pkl' % (pklname, t))
+            name = '%s%s.pkl' % (pklname, t)
+            p = os.path.join(self.pkl_path, name)
             with open(p, 'wb') as f:
                 pickle.dump(getattr(self, attrname), f, -1)
         print('Done')
+        return name
 
     def loads_from_pickle(self, **pklkwargs):
         for attrname, pklname in pklkwargs.items():

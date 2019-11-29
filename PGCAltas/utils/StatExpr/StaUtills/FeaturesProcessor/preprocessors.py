@@ -1,7 +1,14 @@
 import copy
 import pickle
 
-from sklearn.datasets import load_iris
+import sklearn.preprocessing as pp
+import sklearn.impute as ipt
+import sklearn.ensemble as esb
+# import sklearn.feature_selection as fs
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+
+from . import MessProcessesError
 
 
 class FeaturesProcessBase(object):
@@ -87,7 +94,7 @@ class GenericFeaturesProcess(FeaturesProcessBase):
         return self.selector
 
 
-class PreProcessMixin(object):
+class WholePreProcessMixin(object):
 
     def fit_dimensionless(self, fit, *args, **kwargs):
         self.dataset = fit(self.dataset, self.labels, *args, **kwargs)
@@ -110,20 +117,7 @@ class PreProcessMixin(object):
         return self
 
 
-class FeaturesSelectMixin(object):
-
-    def fit_filter(self, fit, *args, **kwargs):
-        self.dataset = fit(self.dataset, *args, **kwargs)
-        return self
-
-
-class MyFeatures(GenericFeaturesProcess, PreProcessMixin):
-
-    import sklearn.preprocessing as pp
-    import sklearn.impute as ipt
-    import sklearn.feature_selection as fs
-    import numpy as np
-    from scipy.stats import pearsonr
+class FeaturesWholePreProcessor(GenericFeaturesProcess, WholePreProcessMixin):
 
     DIMENSIONLESS = {
         "STANDARDIZE": pp.StandardScaler,
@@ -149,28 +143,101 @@ class MyFeatures(GenericFeaturesProcess, PreProcessMixin):
         'CUSTOM': pp.FunctionTransformer,
     }
 
-    FILTER = {
-        "VARIANCE": fs.VarianceThreshold,
-        "PEARSONR": {
-            'PEARSONR': fs.SelectKBest,
-            'score_func': lambda X, y: list(np.array(list(map(lambda x: pearsonr(x, y), X.T))).T)
-        },
-        "CHI2": {
-            'func': fs.SelectKBest,
-            'margs': []
-        }
+
+class BasicPreProcessMixin(object):
+
+    def fit_dimensionless(self, fit, *args, **kwargs):
+        labels = self.get_labels()
+        self.dataset = fit(self.dataset, labels, *args, **kwargs)
+        return self
+
+    def fit_na(self, fit, *args, **kwargs):
+        self.dataset = fit(self.dataset, *args, **kwargs)
+        return self
+
+    def fit_encode(self, fit, *args, **kwargs):
+        self.labels = [fit(ls.reshape(-1, 1), *args, **kwargs).toarray()
+                       for ls in self.labels]
+        return self
+
+
+class FeaturesBasicPreProcessor(GenericFeaturesProcess, BasicPreProcessMixin):
+
+    callfn = "fit_transform"
+
+    DIMENSIONLESS = {
+        "STANDARDIZE": pp.StandardScaler,
+        "MINMAX": pp.MinMaxScaler,
+        "NORMALIZE": pp.Normalizer
     }
 
+    NA = {
+        # "mean", "median", "most_frequent", "constant"
+        "IMPUTE": ipt.SimpleImputer,
+    }
 
-def main():
-    import numpy as np
-    iris = load_iris()
-    label_names = iris.target_names
-    feature_names = iris.feature_names
-    dataset = iris.data
-    labels = iris.target
-    fp = MyFeatures().init_from_data(dataset, labels)
+    ENCODE = {
+        "ONEHOT": pp.OneHotEncoder,
+    }
+
+    def __call__(self, method, **kwargs):
+        if len(method) > 3:
+            raise MessProcessesError("wrong processes queue")
+        self.kwargs = kwargs
+        # fit each labels as ONE HOT CODE
+        self.fit_encode(method[0])
+        # replace NA with most frequent value then dimensionless
+        self.fit_na(method[1], mparams=({'strategy': 'mean'},)).\
+            fit_dimensionless(method[2])
 
 
-if __name__ == '__main__':
-    main()
+class BasicScreenMixin(object):
+
+    def fit_ensemble(self, fit):
+        xtr, ytr = self.dataset, self.get_labels()
+        if self.kwargs.get('split', None):
+            xtr, xte, ytr, yte = self.train_or_test()
+
+        fit.fit(xtr, ytr)
+        acc = accuracy_score(yte, fit.predict(xte)) if self.kwargs.get('split') else 1.0
+        setattr(self, 'acc_', acc)
+        return fit
+
+    def cal_importance_rank(self):
+        fit = getattr(self, 'fit_', None)
+        if fit is None:
+            return
+        m, n = self.dataset.shape
+        improtances = fit.feature_importances_ * n   # type: np.ndarray
+        self.asc_order = improtances.argsort()
+        self.importance_ = improtances[self.asc_order]
+
+
+class FeaturesBasicScreenProcessor(GenericFeaturesProcess, BasicScreenMixin):
+
+    ENSEMBLE = {
+        "RANDOM_FOREST": esb.RandomForestClassifier
+    }
+
+    spilter = {'test_size': 0.3,
+               'random_state': 0}
+
+    # selector = {
+    #     'RANDOM_FOREST': fs.SelectFromModel
+    # }
+
+    def train_or_test(self):
+        labels = self.get_labels()
+        return train_test_split(self.dataset, labels, **self.spilter)
+
+    # def get_selector(self, method):
+    #     selector = self.selector.get(method, None)
+    #     return selector
+
+    def __call__(self, method, mparams=(), **kwargs):
+        # execute(self, method, *fargs, mparams=(), **fkwargs)
+        # func(self, fit, *fargs, **fkwargs)
+        self.kwargs = kwargs
+        self.fit_ = self.fit_ensemble(method, mparams=mparams)
+        self.cal_importance_rank()
+        return self

@@ -1,14 +1,17 @@
 import numpy as np
 import pandas as pd
 
+from PGCAltas.utils.StatExpr.cal_imp_area import GenericEIMProcess
 from PGCAltas.utils.StatExpr.analysis_imp import EIMAnalysis
-from PGCAltas.utils.StatExpr.cal_imp_area import EIMProcess
+from gsedata.misc.features_processor import GSEBinDimensionPPFeatures, GSEBinDimensionSLTFeatures
 from gsedata.misc.reader import ReaderFromDimensions
 
 
-class GSEBinDimensionEIMProcess(EIMProcess):
+class GSEBinDimensionEIMProcess(GenericEIMProcess):
 
     data_reader_class = ReaderFromDimensions
+    preprocessor_class = GSEBinDimensionPPFeatures
+    screen_processor_class = GSEBinDimensionSLTFeatures
 
     def __init__(self, filename):
         super().__init__(filename)
@@ -26,13 +29,13 @@ class GSEBinDimensionEIMProcess(EIMProcess):
 
     def importance_mtx(self, dimension, split_tt=False):
         self.ppf = self.get_preprocessor()
-        self.ppf(*self.preprocesses, dim=dimension)
+        self.ppf(self.preprocesses, dim=dimension)
         features = self.reader.features
         self.slp = self.get_select_processor()
         # RDF_PARAMS in const.py
-        self.slp(self.select_process,
-                 mparams=self.select_process_params,
-                 dim=dimension, split_tt=split_tt)
+        self.slp(self.screen_process,
+                 mparams=self.screen_process_params,
+                 dim=dimension, split=split_tt)
 
         mtx = self._imp_mtx_processing(features, dimension)
         return mtx

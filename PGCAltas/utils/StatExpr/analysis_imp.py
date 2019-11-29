@@ -7,7 +7,7 @@ import pandas as pd
 from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
 from .const import package as c
 from ..statUniversal import eq
-from .StaUtills.Pfeatures import GenericFeaturesProcess
+from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.preprocessors import GenericFeaturesProcess
 from .cal_imp_area import logger
 
 
@@ -24,7 +24,6 @@ class EIMAnalysis(object):
         self.dirname = dirname or c.DATA_DIR
         self.pklfile = pklfile or c.PKL_FILE
         self.rdparams = rdparams
-
         self.reader = None
         self.__pkl_path, self.__csv_path = None, None
 
@@ -156,7 +155,8 @@ class EIMAnalysis(object):
                 fitter = GenericFeaturesProcess.load(f)
 
         # original features dataset
-        xtr, xte, ytr, yte = fitter.train_or_test(dim)
+        fitter.kwargs['dim'] = dim
+        xtr, xte, ytr, yte = fitter.train_or_test()
         print("Original: R[%s * %s] || R[%s * %s]" % (*xtr.shape, *xte.shape))
 
         # significance features selected dataset
