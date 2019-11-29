@@ -14,9 +14,13 @@ from .cal_imp_area import logger
 class EIMAnalysis(object):
 
     data_reader_class = DataReader
+    classifier = c.CLASSIFIER_MODEL
+    classifier_params = c.RDF_PARAMS
     dimensions = None
 
-    def __init__(self, dirname=None, pklfile=None, threshold=0.0, **rdparams):
+    def __init__(self, dirname=None, pklfile=None, threshold=0.0,
+                 pklfit=None, classifier=None, classifier_kwparams=None,
+                 **rdparams):
         self.dirname = dirname or c.DATA_DIR
         self.pklfile = pklfile or c.PKL_FILE
         self.rdparams = rdparams
@@ -25,8 +29,14 @@ class EIMAnalysis(object):
         self.__pkl_path, self.__csv_path = None, None
 
         self.threshold = threshold or c.THRESHOLD
+        self.pklfit = pklfit or c.FIT_PKL
 
-        self.__METHODS = {
+        if classifier:
+            self.classifier = classifier
+        if classifier_kwparams:
+            self.classifier_params = classifier_kwparams
+
+        self._METHODS = {
             "trans_and_sig": self.transform_expr_and_sig_score,
             "acc_between_select": self.different_dim_accuracy_analysis,
         }
@@ -123,7 +133,7 @@ class EIMAnalysis(object):
         for k in self.dimensions:
             logger.info("Working on Dimension@%s" % k.upper())
 
-            fit_pkl, sig_pkl = c.FIT_PKL[k].split(':')
+            fit_pkl, sig_pkl = self.pklfit[k].split(':')
             fit = self.__load__(fit_pkl)
             threshold = self.__load__(sig_pkl)
             acc_df, sacc_df = self.accuracy_analysis(fit, threshold, k)
@@ -167,7 +177,7 @@ class EIMAnalysis(object):
         to_accdataframe(pre_y)
 
         # training new clf from eigen feature training set
-        sclf = c.CLASSIFIER_MODEL(**c.RDF_PARAMS)
+        sclf = self.classifier(**self.classifier_params)
         sclf.fit(sxtr, ytr)
         # predict from eigen feature test set
         spre_y = sclf.predict(sxte)
@@ -184,7 +194,7 @@ class EIMAnalysis(object):
         logger.info('Analysis with dataReader: %s' % self.reader)
 
         for m in method:
-            foo = self.__METHODS[m]
+            foo = self._METHODS[m]
 
             logger.info("Lady's Processing %s" %
                         ' '.join([i.title() for i in foo.__name__.split('_')]))

@@ -16,7 +16,7 @@ def features_select():
     anlysis_handler = aly.execute_eim_analysis
     # Get Selected Expression Matrix and Significant Score Matrix
     # Get the Accuracy Matrix between Raw Expression and Selected Expression Matrix
-    anlysis_handler("trans_and_sig")
+    anlysis_handler("trans_and_sig", "acc_between_select")
 
 
 features_select()
