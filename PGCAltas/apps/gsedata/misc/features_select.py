@@ -1,3 +1,7 @@
+import numpy as np
+import pandas as pd
+
+from PGCAltas.utils.StatExpr.analysis_imp import EIMAnalysis
 from PGCAltas.utils.StatExpr.cal_imp_area import EIMProcess
 from gsedata.misc.reader import ReaderFromDimensions
 
@@ -32,3 +36,19 @@ class GSEBinDimensionEIMProcess(EIMProcess):
 
         mtx = self._imp_mtx_processing(features, dimension)
         return mtx
+
+
+class GSEBinDimensionEIMAnalysis(EIMAnalysis):
+
+    data_reader_class = ReaderFromDimensions
+    dimensions = ['time', 'loc']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def mark_sig_dataset(self, sigds, sid):
+        tl, ll = self.reader.tlabels, self.reader.llabels
+        layer = np.array([s[0] for s in self.reader.samples])
+        merge = np.concatenate([tl.reshape(-1, 1), ll.reshape(-1, 1), layer.reshape(-1, 1), sigds], axis=1)
+        title = np.hstack([np.array(['stage', 'layer', 'loci']), sid])
+        return merge, merge[:, 0:2], title

@@ -137,7 +137,7 @@ class DataReaderBase(object):
 
     def __str__(self):
         return "dataReader@{name}_Non_data" \
-            if self.dataset is [] \
+            if self.dataset == [] \
             else "dataReader@{name}_R[{row} * {col}]".format(name=self.path.split('/')[-1],
                                                              row=self.dataset.shape[0],
                                                              col=self.dataset.shape[1])
