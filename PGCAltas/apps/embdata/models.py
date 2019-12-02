@@ -76,7 +76,7 @@ class CellsInfo(BaseModel):
         db_table = 'emb_cells'
         verbose_name = 'CellInfo'
         verbose_name_plural = 'CellsInfo'
-        ordering = ['stage']
+        # ordering = ['stage']
 
     def __str__(self):
         return "Cell{idx}@{type}_{stage}".format(idx=self.id, type=self.type.name, stage=self.stage.stage)

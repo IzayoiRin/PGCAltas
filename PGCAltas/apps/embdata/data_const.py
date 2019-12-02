@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 DATA_DIR = "EMTAB6967"
 FILE_TYPE = r'\.txt'
-PKL_FILE = ''
+PKL_FILE = 'OBJEMTAB696719120212.pkl'
 DIMENSIONS = ['binomial', ]
 
 NEG = r"^.*NEG"
@@ -17,10 +17,10 @@ CONSTANT for analysis IMPORTANCE AREA
 """
 
 IMPKL = {
-    'binomial': "",
+    'binomial': "RDFBinomialFlow.pkl",
 }
 FIT_PKL = {
-    'binomial': "",
+    'binomial': "RDFBinomialClassifier.pkl:SigScoreBinomialFlow.pkl",
 }
 CLASSIFIER_MODEL = RandomForestClassifier
 THRESHOLD = 0.6

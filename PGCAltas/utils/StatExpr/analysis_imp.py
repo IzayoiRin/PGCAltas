@@ -81,6 +81,7 @@ class EIMAnalysis(object):
         t = n * self.threshold
         sigsco = df.copy()
         sigsco.loc[:, 'SIGNIFY'] = df.AREA > t
+        sigsco = self.mark_sig_score(sigsco)
 
         sigdf = df[df.AREA > t]
         sid = sigdf.IDX.to_numpy(dtype=np.int32)
@@ -95,6 +96,9 @@ class EIMAnalysis(object):
         expr = pd.DataFrame(merge, columns=title, index=None)
         print("SigScore: R[%s * %s] Expression: R[%s * %s]" % (*sigsco.shape, *expr.shape))
         return sigsco, expr
+
+    def mark_sig_score(self, sigsco):
+        return sigsco
 
     def mark_sig_dataset(self, sigds, sid):
         group_keys = None
@@ -144,10 +148,10 @@ class EIMAnalysis(object):
             acc_df.to_pickle(p2)
 
             p3 = os.path.join(self.__csv_path, 'SAccuracy%sFlow.txt' % k.title())
-            acc_df.to_csv(p3, sep='\t', header=True, index=False)
+            sacc_df.to_csv(p3, sep='\t', header=True, index=False)
 
             p4 = os.path.join(self.__pkl_path, 'SAccuracy%sFlow.pkl' % k.title())
-            acc_df.to_pickle(p4)
+            sacc_df.to_pickle(p4)
 
     def accuracy_analysis(self, fitter, thd_df, dim):
         if isinstance(fitter, str):
@@ -157,12 +161,10 @@ class EIMAnalysis(object):
         # original features dataset
         fitter.kwargs['dim'] = dim
         xtr, xte, ytr, yte = fitter.train_or_test()
-        print("Original: R[%s * %s] || R[%s * %s]" % (*xtr.shape, *xte.shape))
 
         # significance features selected dataset
         sid = thd_df[thd_df.SIGNIFY == True].IDX.to_numpy(dtype=np.int32)
         sxtr, sxte = xtr[:, sid], xte[:, sid]
-        print("Significant: R[%s * %s] || R[%s * %s]" % (*sxtr.shape, *sxte.shape))
 
         ret = list()
 
@@ -170,13 +172,16 @@ class EIMAnalysis(object):
             acc_vec = eq(pre, yte, dim=0, int0=True)
             var_vec = np.arange(0, acc_vec.shape[0])
             acc_mtx = np.vstack([var_vec, var_vec, acc_vec]).T
+            print("Accuracy: %.6f" % np.mean(acc_vec))
             ret.append(pd.DataFrame(acc_mtx, columns=['Label', 'Predict', 'Value']))
 
         # predict from original test set
+        print("Original: R[%s * %s] || R[%s * %s]" % (*xtr.shape, *xte.shape))
         pre_y = fitter.fit_.predict(xte)
         to_accdataframe(pre_y)
 
         # training new clf from eigen feature training set
+        print("Significant: R[%s * %s] || R[%s * %s]" % (*sxtr.shape, *sxte.shape))
         sclf = self.classifier(**self.classifier_params)
         sclf.fit(sxtr, ytr)
         # predict from eigen feature test set
