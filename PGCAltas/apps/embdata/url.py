@@ -4,5 +4,5 @@ from . import views
 
 
 urlpatterns = [
-    url(r"^features/screen/$", views.FeaturesScreenAPIView.as_view())
+    url(r"^features/$", views.FeaturesScreenAPIView.as_view())
 ]

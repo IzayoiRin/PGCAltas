@@ -1,9 +1,9 @@
 import os
 
-# from django.http import HttpResponse
-# from django.shortcuts import render
-# from rest_framework.generics import GenericAPIView
-# from rest_framework.response import Response
+from django.http import HttpResponse
+from django.shortcuts import render
+from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
 
 from embdata import patch_const
 patch_const()
@@ -50,14 +50,13 @@ def features(flush=False):
     workflow.eim().eim_analysis().estimate(n_components=10, after_filter=120)
 
 
-features(True)
+class FeaturesScreenAPIView(GenericAPIView):
 
-# class FeaturesScreenAPIView(GenericAPIView):
-#
-#     def get(self, request):
-#         flush = request.query_params.get('flush', None)
-#         features_screen(flush)
-#         eim_mtx_file = os.path.join(__DATA_ROOT__, 'texts', 'RDFBinomialFlow.txt')
-#         with open(eim_mtx_file, 'r', encoding='utf-8') as f:
-#             text = f.read()
-#         return HttpResponse(text, content_type="text/plain")
+    def get(self, request):
+        flush = request.query_params.get('flush', None)
+        features(flush)
+        # eim_mtx_file = os.path.join(__DATA_ROOT__, 'texts', 'RDFBinomialFlow.txt')
+        # with open(eim_mtx_file, 'r', encoding='utf-8') as f:
+        #     text = f.read()
+        # return HttpResponse(text, content_type="text/plain")
+        return Response({"msg": "Finish"})
