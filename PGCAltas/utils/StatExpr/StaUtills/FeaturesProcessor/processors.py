@@ -1,9 +1,12 @@
 import copy
 import pickle
 
+import numpy as np
 import sklearn.preprocessing as pp
 import sklearn.impute as ipt
 import sklearn.ensemble as esb
+from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 # import sklearn.feature_selection as fs
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -240,3 +243,46 @@ class FeaturesBasicScreenProcessor(GenericFeaturesProcess, BasicScreenMixin):
         self.fit_ = self.fit_ensemble(method, mparams=mparams)
         self.cal_importance_rank()
         return self
+
+
+class BasicExtractMixin(object):
+
+    def fit_reduce(self, fit, *fargs, **fkwargs):
+        if fkwargs.get('supervised'):
+            fit.fit(self.dataset, self.labels)
+        else:
+            fit.fit(self.dataset)
+        self.dataset = fit.transform(self.dataset)
+        return self
+
+
+class FeatureBasicExtractProcessor(GenericFeaturesProcess, BasicExtractMixin):
+
+    REDUCE = {
+        "PRINCIPAL_COMPONENTS": PCA,
+        "LINEAR_DISCRIMINANT": LinearDiscriminantAnalysis
+    }
+
+    def __call__(self, method, mparams=(), **kwargs):
+        self.kwargs = kwargs
+        self.fit_reduce(method, mparams=mparams, supervised=True)
+
+
+class FeatureFilterExtractProcessor(FeatureBasicExtractProcessor):
+
+    def __call__(self, *methods, **kwargs):
+        """
+        :param methods: [(filter, flt_params), (reducer, rdc_params)]
+        :param kwargs:
+        :return:
+        """
+        self.kwargs = kwargs
+        if len(methods) != 2:
+            raise MessProcessesError("Wrong processes queue")
+        (flt, flt_params), (rdc, rdc_params) = methods
+        ori_features = self.dataset.shape[1]
+        flag = ori_features > flt_params['n_components'] > rdc_params['n_components'] > 0
+        if not flag:
+            raise MessProcessesError("Wrong processes params")
+        self.fit_reduce(flt, mparams=(flt_params,), supervised=False)\
+            .fit_reduce(rdc, mparams=(rdc_params,), supervised=True)

@@ -6,7 +6,7 @@ import pandas as pd
 import pickle
 
 from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
-from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.preprocessors import FeaturesBasicPreProcessor, \
+from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.processors import FeaturesBasicPreProcessor, \
     FeaturesBasicScreenProcessor
 
 from .const import package as c
@@ -26,7 +26,7 @@ class GenericEIMProcess(object):
 
     screen_processor_class = FeaturesBasicScreenProcessor
     screen_process = "RANDOM_FOREST"
-    screen_process_params = (c.RDF_PARAMS,)
+    screen_process_params = [c.RDF_PARAMS, ]
 
     def __init__(self, filename, dirname=None, pklfile=None, dims=None, **rdparams):
         self.filename = filename + c.FILE_TYPE + r'$'
@@ -119,7 +119,12 @@ class GenericEIMProcess(object):
         for dim in self.dimensions:
             logger.info("Lady's Calculating Importance ...")
 
-            mtx = self.importance_mtx(dim, split_tt=True)
+            try:
+                mtx = self.importance_mtx(dim, split_tt=True)
+            except Exception as e:
+                logging.critical(e)
+                return
+
             mtx_p = os.path.join(self.reader.pkl_path, 'RDF%sScore.pkl' % dim.title())
             pickle.dump(mtx, open(mtx_p, 'wb'))
 

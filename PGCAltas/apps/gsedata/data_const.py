@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 DATA_DIR = 'GSE120963'
 FILE_TYPE = r'\.txt'
-PKL_FILE = 'OBJGSE12096319112922.pkl'
+PKL_FILE = 'OBJGSE12096319120413.pkl'
 DIMENSIONS = ['time', 'loc']
 
 

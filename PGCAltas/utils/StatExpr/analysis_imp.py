@@ -1,5 +1,6 @@
 import os
 import pickle
+import logging
 
 import numpy as np
 import pandas as pd
@@ -7,8 +8,10 @@ import pandas as pd
 from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
 from .const import package as c
 from ..statUniversal import eq
-from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.preprocessors import GenericFeaturesProcess
-from .cal_imp_area import logger
+from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.processors import GenericFeaturesProcess
+
+
+logger = logging.getLogger("django")
 
 
 class EIMAnalysis(object):
@@ -16,7 +19,7 @@ class EIMAnalysis(object):
     data_reader_class = DataReader
     classifier = c.CLASSIFIER_MODEL
     classifier_params = c.RDF_PARAMS
-    dimensions = None
+    dimensions = list()
 
     def __init__(self, dirname=None, pklfile=None, threshold=0.0,
                  pklfit=None, classifier=None, classifier_kwparams=None,
@@ -59,6 +62,14 @@ class EIMAnalysis(object):
         return val
 
     def transform_expr_and_sig_score(self):
+        """
+        Get the significant marked EIM score matrix and transform original expr matrix to significant one
+        Output:
+            .\pickles
+                \Expr*Flow.pkl & \SigScore*Flow.pkl
+            .\texts\
+                \Expr*Flow.txt & \SigScore*Flow.txt
+        """
         for k in self.dimensions:
             logger.info("Working on Dimension@%s" % k.upper())
             df_score = self.__load__(c.IMPKL[k])
@@ -133,6 +144,14 @@ class EIMAnalysis(object):
         return np.hstack(ret)
 
     def different_dim_accuracy_analysis(self):
+        """
+        Doing Accuracy assay between original and screened expr matrix through RDF classifier
+        Output:
+             .\pickles
+                \Accuracy*Flow.pkl & \SAccuracy*Flow.pkl
+            .\texts\
+                \Accuracy*Flow.txt & \SAccuracy*Flow.txt
+        """
         for k in self.dimensions:
             logger.info("Working on Dimension@%s" % k.upper())
 

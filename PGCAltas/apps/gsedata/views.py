@@ -2,13 +2,16 @@ from django.shortcuts import render
 
 # Create your views here.
 
+from gsedata import patch_const
+patch_const()
 from gsedata.misc.features_select import GSEBinDimensionEIMProcess, GSEBinDimensionEIMAnalysis
 
 
-def features_select():
+def features_screen(flush=False):
     eim = GSEBinDimensionEIMProcess(r"^E.*")
-    # dataReader Flushed
-    eim.flushed()
+    if flush:
+        # dataReader Flushed
+        eim.flushed()
     # Calculate Equ_importance Integral Matrix
     eim.execute_eim_process()
     # Get Analysis Handler
@@ -19,4 +22,4 @@ def features_select():
     anlysis_handler("trans_and_sig", "acc_between_select")
 
 
-features_select()
+features_screen(True)

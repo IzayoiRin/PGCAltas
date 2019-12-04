@@ -1,4 +1,4 @@
-from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.preprocessors import FeaturesBasicPreProcessor, \
+from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.processors import FeaturesBasicPreProcessor, \
     FeaturesBasicScreenProcessor
 
 
