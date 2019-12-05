@@ -104,7 +104,7 @@ class DimensionEstimate(object):
                 return
 
             p1 = os.path.join(self.__csv_path, 'Estimated%sFlow.txt' % k.title())
-            etp_df.to_csv(p1, sep='\t', header=True, index=False)
+            etp_df.to_csv(p1, sep='\t', header=True, index=True)
 
             p2 = os.path.join(self.__pkl_path, 'Estimated%sFlow.pkl' % k.title())
             etp_df.to_pickle(p2)

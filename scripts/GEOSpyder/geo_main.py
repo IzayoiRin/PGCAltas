@@ -9,7 +9,7 @@ def main():
     try:
         opt, argv = getopt.getopt(sys.argv[1:], "s:o:m:u:p:U", ['search=', 'outputdir='])
     except getopt.GetoptError:
-        print('main.py -s <search> -o <outputdir> -m<many> -n<namespace> -t<dtype> -u <url> -p <patten> -U <unicode>')
+        print('geo_main.py -s <search> -o <outputdir> -m<many> -n<namespace> -t<dtype> -u <url> -p <patten> -U <unicode>')
         sys.exit(2)
     for _ in range(2-len(argv)):
         argv.append(None)

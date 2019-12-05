@@ -41,20 +41,23 @@ class FeatuersProjectWorkFlow(object):
         fext.execute_estimate_process(**kwargs)
 
 
-def features(flush=False):
+def features(flush=False, **kwargs):
     workflow = FeatuersProjectWorkFlow(r"[A-Za-z]+2_Expr.*")
     workflow.flush = flush
     workflow.test_size = 0.7
     workflow.eim_choice = ["trans_and_sig", "acc_between_select"]
-
-    workflow.eim().eim_analysis().estimate(n_components=10, after_filter=120)
+    # n_components=2, after_filter=120
+    workflow.eim().eim_analysis().estimate(**kwargs)
 
 
 class FeaturesScreenAPIView(GenericAPIView):
 
     def get(self, request):
-        flush = request.query_params.get('flush', None)
-        features(flush)
+        query_dict = request.query_params
+        # TODO: Serializer optim
+        query = {k: int(v) for k, v in query_dict.items()}
+        print(query)
+        features(**query)
         # eim_mtx_file = os.path.join(__DATA_ROOT__, 'texts', 'RDFBinomialFlow.txt')
         # with open(eim_mtx_file, 'r', encoding='utf-8') as f:
         #     text = f.read()

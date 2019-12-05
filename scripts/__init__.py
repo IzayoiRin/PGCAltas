@@ -1,5 +1,5 @@
 import os
-from build_db import DBuilding
+from .build_db import DBuilding
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 DATASET_ROOT = os.path.join(BASE_DIR, 'dataset', 'raw_data')

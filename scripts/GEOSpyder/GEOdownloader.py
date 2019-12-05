@@ -8,7 +8,7 @@ import requests
 import time
 from tqdm import tqdm
 
-from GEOSpyder.user_agents import randagent as ragent
+from scripts.GEOSpyder.user_agents import randagent as ragent
 
 
 class GEODownloader(object):
