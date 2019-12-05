@@ -1,7 +1,3 @@
-import os
-
-from django.http import HttpResponse
-from django.shortcuts import render
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
@@ -46,7 +42,7 @@ def features(flush=False, **kwargs):
     workflow.flush = flush
     workflow.test_size = 0.7
     workflow.eim_choice = ["trans_and_sig", "acc_between_select"]
-    # n_components=2, after_filter=120
+    # n_components=12, after_filter=120, barnes_hut=0.5
     workflow.eim().eim_analysis().estimate(**kwargs)
 
 

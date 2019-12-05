@@ -7,6 +7,8 @@ import sklearn.impute as ipt
 import sklearn.ensemble as esb
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.manifold import TSNE
+from sklearn.decomposition import TruncatedSVD
 # import sklearn.feature_selection as fs
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -260,7 +262,7 @@ class FeatureBasicExtractProcessor(GenericFeaturesProcess, BasicExtractMixin):
 
     REDUCE = {
         "PRINCIPAL_COMPONENTS": PCA,
-        "LINEAR_DISCRIMINANT": LinearDiscriminantAnalysis
+        "LINEAR_DISCRIMINANT": LinearDiscriminantAnalysis,
     }
 
     def __call__(self, method, mparams=(), **kwargs):
@@ -286,3 +288,22 @@ class FeatureFilterExtractProcessor(FeatureBasicExtractProcessor):
             raise MessProcessesError("Wrong processes params")
         self.fit_reduce(flt, mparams=(flt_params,), supervised=False)\
             .fit_reduce(rdc, mparams=(rdc_params,), supervised=True)
+
+
+class Viewer2DMixin(object):
+
+    def fit_estimate(self, fit, *fargs, **fkwargs):
+        self.dataset = fit.fit_transform(self.dataset)
+        return fit
+
+
+class Feature2DViewerProcessor(GenericFeaturesProcess, Viewer2DMixin):
+
+    ESTIMATE = {
+        "T_STOCHASTIC": TSNE,
+        "SPARSE_SVD": TruncatedSVD
+    }
+
+    def __call__(self, method, mparams=(), **kwargs):
+        self.kwargs = kwargs
+        self.fit_ = self.fit_estimate(method, mparams=mparams)

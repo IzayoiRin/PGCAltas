@@ -46,7 +46,7 @@ SIGEXPR_PKL = {
 
 
 """
-REDUCE DIMENSION MODEL PARAMS
+DIMENSION ESTIMATOR MODEL PARAMS
 """
 LDA_PARAMS = {
     # svd , lsqr, eigen
@@ -62,3 +62,20 @@ PCA_PARAMS = {
 
 FILTER_RATES = 0.2
 COMPONENTS_RATES = 0.75
+
+# 2D-Viewer params
+TSNE_PARAMS = {
+    'perplexity': 30.0,
+    'learning_rate': 200.0,
+    'n_iter': 1000,
+    'n_iter_without_progress': 50 * 6,
+    'random_state': 0,
+    'method': 'exact',
+    # 'angle': 0.5 for 'method': 'barnes_hut'
+}
+
+SPSVD_PARAMS = {
+    'algorithm': 'randomized',
+    'n_iter': 7,
+    'random_state': 0,
+}

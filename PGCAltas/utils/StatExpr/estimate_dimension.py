@@ -26,12 +26,13 @@ class DimensionEstimate(object):
         self.pklfile = pklfile or c.PKL_FILE
 
         self.reader = None
-        self.__pkl_path, self.__csv_path = None, None
+        self._pkl_path, self._csv_path = None, None
 
         self.dataset = None
         self.labels = None
 
         self.etp = None
+        self.estimated_dat_ = list()
 
     def get_data_reader_class(self):
         return self.data_reader_class
@@ -46,7 +47,7 @@ class DimensionEstimate(object):
         return pkl_path, csv_path
 
     def __load__(self, v):
-        p = os.path.join(self.__pkl_path, v)
+        p = os.path.join(self._pkl_path, v)
         with open(p, 'rb') as f:
             val = pickle.load(f)
         return val
@@ -74,16 +75,23 @@ class DimensionEstimate(object):
     def _estimate_dimension(self):
         dim = self.kwargs.get('dim')
         self.etp.dumps(
-            open(os.path.join(self.__pkl_path, '%sEstimator.pkl' % dim.title()), 'wb')
+            open(os.path.join(self._pkl_path, '%sEstimator.pkl' % dim.title()), 'wb')
         )
         header = ['D%s' % i for i in range(self.n_componets)]
         return pd.DataFrame(self.etp.dataset, index=self.get_labels(), columns=header)
+
+    def _dumps(self, datframe, dim, name='Estimated%sFlow.txt'):
+        p1 = os.path.join(self._csv_path, name % dim.title())
+        datframe.to_csv(p1, sep='\t', header=True, index=True)
+
+        p2 = os.path.join(self._pkl_path, name % dim.title())
+        datframe.to_pickle(p2)
 
     def execute_estimate_process(self, **kwargs):
         self.reader = self.get_data_reader()
         if self.reader is None:
             raise ReaderLoadError("Can't load dataReader: %s" % self.data_reader_class.__name__)
-        self.__pkl_path, self.__csv_path = self.get_file_path()
+        self._pkl_path, self._csv_path = self.get_file_path()
 
         logger.info('Load dataReader: %s' % self.reader)
 
@@ -102,9 +110,5 @@ class DimensionEstimate(object):
             except MessProcessesError as e:
                 logging.critical(e)
                 return
-
-            p1 = os.path.join(self.__csv_path, 'Estimated%sFlow.txt' % k.title())
-            etp_df.to_csv(p1, sep='\t', header=True, index=True)
-
-            p2 = os.path.join(self.__pkl_path, 'Estimated%sFlow.pkl' % k.title())
-            etp_df.to_pickle(p2)
+            self.estimated_dat_.append(etp_df)
+            self._dumps(etp_df, k)
