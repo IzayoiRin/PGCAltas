@@ -80,11 +80,11 @@ class DimensionEstimate(object):
         header = ['D%s' % i for i in range(self.n_componets)]
         return pd.DataFrame(self.etp.dataset, index=self.get_labels(), columns=header)
 
-    def _dumps(self, datframe, dim, name='Estimated%sFlow.txt'):
-        p1 = os.path.join(self._csv_path, name % dim.title())
+    def _dumps(self, datframe, dim, name='Estimated%sFlow'):
+        p1 = os.path.join(self._csv_path, name % dim.title() + '.txt')
         datframe.to_csv(p1, sep='\t', header=True, index=True)
 
-        p2 = os.path.join(self._pkl_path, name % dim.title())
+        p2 = os.path.join(self._pkl_path, name % dim.title() + '.pkl')
         datframe.to_pickle(p2)
 
     def execute_estimate_process(self, **kwargs):

@@ -70,7 +70,6 @@ class EMBTABinomalEIMAnalysis(EIMAnalysis):
         ctype = np.array([qs[int(cid)].type.name for cid in a])
         merge = np.concatenate([self.reader.labels.reshape(-1, 1), ctype.reshape(-1, 1), sigds], axis=1)
         title = np.hstack([['label', 'ctype'], sid])
-        # title = np.insert(sid.astype(np.str), 0, 'label')
         return merge, None, title
 
 
@@ -80,6 +79,7 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
     estimate_processor_class = FeatureFilterExtractProcessor
     estimate_process = ["PRINCIPAL_COMPONENTS", "LINEAR_DISCRIMINANT"]
     estimate_process_params = [PCA_PARAMS, LDA_PARAMS]
+    test_size = 0.6
     dimension = ['binomial', ]
 
     viewer_class = Feature2DViewerProcessor
@@ -104,13 +104,19 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
             np.unique(self.labels).shape[0] * (1 - FILTER_RATES)
         ))
 
+    def get_estimate_processor_class(self):
+        self.estimate_processor_class.spilter['test_size'] = self.test_size
+        return self.estimate_processor_class
+
     def estimate_dimension(self):
         self.etp = self.get_estimate_processor()
         LDA_PARAMS['n_components'] = self.n_componets
         PCA_PARAMS['n_components'] = self.after_filter
         self.etp(*zip(self.estimate_process, self.estimate_process_params))
         mtx = self._estimate_dimension()
-        print("%s Estimate: R[%s*%s] -----> R[%s*%s]" % (self.kwargs['dim'].title(), *self.dataset.shape, *mtx.shape))
+        print("%s Estimate: R[%s*%s] -----> R[%s*%s] supervised_acc=%.6f"
+              % (self.kwargs['dim'].title(), *self.dataset.shape, *mtx.shape, self.etp.supervised_acc_)
+              )
         return mtx
 
     def get_labels(self):
@@ -147,7 +153,7 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
             viewer.dumps(
                 open(os.path.join(self._pkl_path, '%sEstimator.pkl' % method.title()), 'wb')
             )
-            self._dumps(df, 'binomial', '%s{}_Estimated.txt'.format(method))
+            self._dumps(df, 'binomial', '%s{}_Estimated'.format(method))
 
         viewer_set = zip(self.viewer_method, self.viewer_params)
         for m, p in viewer_set:

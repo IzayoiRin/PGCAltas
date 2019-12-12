@@ -70,3 +70,17 @@ def eq(arr1, arr2, dim=None):
     if dim is 0:
         return np.array([np.equal(arr1[i, :], arr2[i, :]).all() for i in range(n)])
     return np.array([np.equal(arr1[:, i], arr2[:, i]).all() for i in range(n)])
+
+
+def split_arr(arr, seq):
+    ret = list()
+    n = len(arr)
+    if n <= seq:
+        ret.append(arr)
+        return ret
+    for i in range(n // seq):
+        s, e = i*seq, (i+1)*seq
+        ret.append(arr[s:e])
+    if e < n:
+        ret.append(arr[e:])
+    return ret

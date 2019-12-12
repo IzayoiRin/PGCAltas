@@ -250,8 +250,12 @@ class FeaturesBasicScreenProcessor(GenericFeaturesProcess, BasicScreenMixin):
 class BasicExtractMixin(object):
 
     def fit_reduce(self, fit, *fargs, **fkwargs):
+
         if fkwargs.get('supervised'):
-            fit.fit(self.dataset, self.labels)
+            xtr, xte, ytr, yte = self.train_or_test()
+            fit.fit(xtr, ytr)
+            acc = accuracy_score(yte, fit.predict(xte))
+            setattr(self, 'supervised_acc_', acc)
         else:
             fit.fit(self.dataset)
         self.dataset = fit.transform(self.dataset)
@@ -264,6 +268,15 @@ class FeatureBasicExtractProcessor(GenericFeaturesProcess, BasicExtractMixin):
         "PRINCIPAL_COMPONENTS": PCA,
         "LINEAR_DISCRIMINANT": LinearDiscriminantAnalysis,
     }
+
+    spilter = {
+        'test_size': 0.3,
+        'random_state': 0,
+    }
+
+    def train_or_test(self):
+        labels = self.get_labels()
+        return train_test_split(self.dataset, labels, **self.spilter)
 
     def __call__(self, method, mparams=(), **kwargs):
         self.kwargs = kwargs

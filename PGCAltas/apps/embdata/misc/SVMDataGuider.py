@@ -5,6 +5,7 @@ import pickle
 
 from embdata.misc import *
 from embdata.models import CellsInfo, Expression
+from PGCAltas.utils.statUniversal import split_arr
 
 
 # def g_select(gpool_max):
@@ -117,16 +118,22 @@ class DataGuider(object):
         self._2pickle(ret, 'select_dict')
         self.cell_guider = ret
 
-    def build_expr_set(self, pkl_name='select_dict'):
+    def build_expr_set(self, pkl_name='select_dict', fold=10):
         if self.cell_guider is None:
             self._load_from_pickle(pkl_name, 'cell_guider')
+
+        n = sum([len(d) for d in self.cell_guider.values()])
+        print("Total Queried Types: %d" % n)
 
         for k, v in self.cell_guider.items():
             self._expr_dict[k] = list()
             for ctype, cids in v.items():
                 print("CellTypeId: %s\tSelected: %s" % (ctype, len(cids)))
-                mtx_df = self._build_part_expr(ctype, cids)
-                self._expr_dict[k].append(mtx_df)
+                arrs = split_arr(cids, fold)
+                for idx, splited_cids in enumerate(arrs):
+                    print("|---Batch: %s / %s" % (idx+1, len(arrs)))
+                    mtx_df = self._build_part_expr(ctype, splited_cids)
+                    self._expr_dict[k].append(mtx_df)
 
         self._2pickle(self._expr_dict, 'expr_dict')
 
@@ -188,9 +195,14 @@ class DataGuider(object):
                 return pickle.load(f)
             setattr(self, attr, pickle.load(f))
 
+    def __str__(self):
+        return "Guider@%s" % self.file
 
-def _example():
-    guider = DataGuider('SVMsetGuider2.txt').build_datframe(index_col=0, header=0)
+
+def guiding(guider='SVMsetGuider2.txt', index_col=0, header=0, sep='\t'):
+    guider = DataGuider(guider).build_datframe(index_col=index_col, header=header)
+    print("Selecting From %s" % guider)
     guider.select_cell_from_guiders()
+    print("Building Expression Matrix")
     guider.build_expr_set()
-    guider.save('txt', header=True, index=True, sep='\t')
+    guider.save('txt', header=header is not None, index=header is not None, sep=sep)

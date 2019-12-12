@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 DATA_DIR = "EMTAB6967"
 FILE_TYPE = r'\.txt'
-PKL_FILE = 'OBJEMTAB696719120413.pkl'
+PKL_FILE = 'OBJEMTAB696719120912.pkl'
 DIMENSIONS = ['binomial', ]
 
 NEG = r"^.*NEG"
@@ -78,4 +78,37 @@ SPSVD_PARAMS = {
     'algorithm': 'randomized',
     'n_iter': 7,
     'random_state': 0,
+}
+
+
+"""
+CONSTANT for SVM Classify
+"""
+ESTIMATED_EXPR_PKL = {
+    "binomial": "EstimatedBinomialFlow.pkl",
+}
+
+
+"""
+SUPPORT VECTOR MACHINE PARAMS
+"""
+SVM_PARAMS = {
+    'C': 1.0,
+    # linear, poly, rbf, sigmoid, precomputed
+    'kernel': 'rbf',
+    # max level power of kernel ploy
+    'degree': 3,
+    # coef of kernel function
+    'gamma': 'scale',
+    # bias of kernel ploy and sigmoid
+    'coef0': 0.0,
+    'max_iter': -1,
+    'shrinking': True,
+    'probability': False,
+    # multi classify decision: ovr, crammer_singer
+    # ovr: 将待分类中的某一类当作正类，其他全部归为负类，通过这样求取得到每个类别作为正类时的正确率，取正确率最高的那个类别为正类
+    # ovo: 目标函数设置多个参数值，最后进行优化，得到不同类别的参数值大小
+    'decision_function_shape': 'ovr',
+    'random_state': 0,
+    'cache_size': 200
 }

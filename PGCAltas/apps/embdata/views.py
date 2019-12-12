@@ -14,7 +14,7 @@ class FeatuersProjectWorkFlow(object):
     def __init__(self, file_name):
         self.file_name = file_name
         self.flush = False
-        self.test_size = 0.0
+        self.test_size = 0.3
         self.eim_choice = list()
 
     def eim(self):
@@ -34,24 +34,26 @@ class FeatuersProjectWorkFlow(object):
 
     def estimate(self, **kwargs):
         fext = EMBTABinomalDimensionEstimate()
+        fext.test_size = kwargs.pop('test_size', None) or self.test_size
         fext.execute_estimate_process(**kwargs)
 
 
 def features(flush=False, **kwargs):
     workflow = FeatuersProjectWorkFlow(r"[A-Za-z]+2_Expr.*")
     workflow.flush = flush
-    workflow.test_size = 0.7
+    workflow.test_size = 0.3
     workflow.eim_choice = ["trans_and_sig", "acc_between_select"]
-    # n_components=12, after_filter=120, barnes_hut=0.5
+    # n_components=12, after_filter=120, barnes_hut=0.5, test_size=0.4
     workflow.eim().eim_analysis().estimate(**kwargs)
 
 
 class FeaturesScreenAPIView(GenericAPIView):
 
+    # embdata/features/?flush=1&n_components=12&after_filter=120&barnes_hut=0.5&test_size=0.3
     def get(self, request):
         query_dict = request.query_params
         # TODO: Serializer optim
-        query = {k: int(v) for k, v in query_dict.items()}
+        query = {k: eval(v) for k, v in query_dict.items()}
         print(query)
         features(**query)
         # eim_mtx_file = os.path.join(__DATA_ROOT__, 'texts', 'RDFBinomialFlow.txt')
