@@ -2,6 +2,18 @@
 import os
 import sys
 
+
+def fire_resoluter(cmapping):
+    cmd_args = sys.argv
+    startf = cmd_args[0]
+    cmd = cmapping[cmd_args[1]]
+    module, calling = cmd.rsplit('.', 1)
+    from importlib import import_module
+    calling = getattr(import_module(module), calling)
+    import fire
+    fire.Fire({cmd_args[1]: calling})
+
+
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "PGCAltas.settings.dev")
     try:
@@ -19,4 +31,12 @@ if __name__ == "__main__":
                 "forget to activate a virtual environment?"
             )
         raise
-    execute_from_command_line(sys.argv)
+    from django.conf import LazySettings
+
+    settings = LazySettings()
+    if len(sys.argv) > 1 and sys.argv[1] in settings.COMMANDS:
+        import django
+        django.setup()
+        fire_resoluter(settings.COMMANDS)
+    else:
+        execute_from_command_line(sys.argv)

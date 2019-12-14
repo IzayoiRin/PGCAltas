@@ -181,3 +181,10 @@ EXPR_DB_PARTITION = {"p0": [4],
                      "p2": [11, 12, 13, 14, 15, 16, 17, 18, 19],
                      "p3": [20, 21, 22, 23, 24, 25, 26, 27, 28],
                      "p4": [29, 30, 31, 32, 33, 34, 35, 36, 37]}
+
+# command from shell
+# Dict -k: command -v: calling import path
+COMMANDS = {
+    "sunburst": "embdata.script.sunburstStat",
+    "initsvmdata": "embdata.script.svmGuider",
+}

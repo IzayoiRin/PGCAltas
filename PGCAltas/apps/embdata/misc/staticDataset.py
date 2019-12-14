@@ -45,7 +45,7 @@ class StaticCellCounts(object):
         self.datframe.to_csv('.'.join(file), **kwargs)
 
 
-class SunburstStatic(object):
+class SunburstStat(object):
 
     ROOT_ATTR = {
         "name": 'Total',
@@ -75,10 +75,12 @@ class SunburstStatic(object):
             f.write(json_str)
             print('Done')
 
+    def build(self, root=False):
+        self.as_datframe().to_json(include_root=root)
+
 
 if __name__ == '__main__':
-        # sc = StaticCellCounts('cells_counts.txt')
-        # sc.build_dataframe().to_csv(header=True, index=True, sep='\t')
-        ss = SunburstStatic('sunbusrt.txt').as_datframe()
-        ss.to_json(include_root=False)
+        sc = StaticCellCounts('cells_counts.txt')
+        sc.build_dataframe().to_csv(header=True, index=True, sep='\t')
+        SunburstStat('sunbusrt.txt').build(root=False)
 

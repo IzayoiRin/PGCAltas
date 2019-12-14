@@ -107,6 +107,8 @@ class DataGuider(object):
 
         for k, v in self._guiders.items():
             for x, y, z in v:
+                # TODO: Python3.7 choice can't used to queryset generator, plz use first qs
+                # qs = np.random.choice(list(CellsInfo.query.filter(type_id=x, stage_id=y)), size=z, replace=False)
                 qs = np.random.choice(CellsInfo.query.filter(type_id=x, stage_id=y), size=z, replace=False)
 
                 # db partition
@@ -164,7 +166,9 @@ class DataGuider(object):
 
         ret = dict()
         for k, v in self._expr_dict.items():
-            if len(v) < 2:
+            if len(v) == 0:
+                continue
+            if len(v) == 1:
                 temp = v[0]
             else:
                 temp = pd.concat(v)
@@ -199,10 +203,11 @@ class DataGuider(object):
         return "Guider@%s" % self.file
 
 
-def guiding(guider='SVMsetGuider2.txt', index_col=0, header=0, sep='\t'):
+def guiding(guider='SVMsetGuider2.txt', fold=100, index_col=0, header=0, sep='\t'):
     guider = DataGuider(guider).build_datframe(index_col=index_col, header=header)
     print("Selecting From %s" % guider)
     guider.select_cell_from_guiders()
     print("Building Expression Matrix")
-    guider.build_expr_set()
+    guider.build_expr_set(fold=fold)
     guider.save('txt', header=header is not None, index=header is not None, sep=sep)
+    print("Done!")
