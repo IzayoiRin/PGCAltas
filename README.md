@@ -1,6 +1,11 @@
 # PGCAltas
 Limn the altas of PGCs accrossing deep learning
 
+Frontends:
+    www.lilab.com
+Backends:
+    api.pgcaltas.site
+
 manage.py additional shell commands:
     sunburst build Options[--file "file_name", --root=bool[default=False] "include root?"]
     initsvmdata Options[

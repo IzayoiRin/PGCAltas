@@ -26,7 +26,7 @@ SECRET_KEY = 'opz3g67_i-%^*24qer%-%9f4xykqczsp316a5u8n7r@8)n^v77'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'www.lilab.com']
 
 
 # Application definition
@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'embdata.apps.EmbdataConfig',
     'gsedata.apps.GsedataConfig',
@@ -51,9 +52,19 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'PGCAltas.urls'
+
+# CORS whitelist
+CORS_ORIGIN_WHITELIST = (
+    '127.0.0.1:8080',
+    'localhost:8080',
+    'www.lilab.com:8080',
+)
+# allow request with cookies
+CORS_ALLOW_CREDENTIALS = True
 
 TEMPLATES = [
     {
@@ -176,15 +187,19 @@ STATIC_URL = '/static/'
 
 DATASET_URL = '/dataset/'
 
+
+# DB Expression table partition config
 EXPR_DB_PARTITION = {"p0": [4],
                      "p1": [1, 2, 3, 5, 6, 7, 8, 9, 10],
                      "p2": [11, 12, 13, 14, 15, 16, 17, 18, 19],
                      "p3": [20, 21, 22, 23, 24, 25, 26, 27, 28],
                      "p4": [29, 30, 31, 32, 33, 34, 35, 36, 37]}
 
-# command from shell
+
+# Command from shell
 # Dict -k: command -v: calling import path
 COMMANDS = {
-    "sunburst": "embdata.script.sunburstStat",
-    "initsvmdata": "embdata.script.svmGuider",
+    "initdb": "scripts.embtadb",
+    "sunburst": "embdata.scripts.sunburstStat",
+    "initsvmdata": "embdata.scripts.svmGuider",
 }

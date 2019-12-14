@@ -1,10 +1,16 @@
 import os
 import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "PGCAltas.settings.dev")
-django.setup()
+if os.environ.get("DJANGO_SETTINGS_MODULE", None) is None:
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "PGCAltas.settings.dev")
+    django.setup()
 
+from django.conf import LazySettings
 from embdata import models as emb
+from scripts import const as c
+
+settings = LazySettings()
+PATH_ = os.path.dirname(settings.BASE_DIR) + settings.DATASET_URL
 
 
 class DBuilding(object):
@@ -12,7 +18,7 @@ class DBuilding(object):
     def __init__(self, root, data: str):
         data_dir, data = data.split(':')
         genes, clusters, stages, cells, expression, bad = data.split(',')
-        self.root = os.path.join(root, data_dir)
+        self.root = os.path.join(root, data_dir, c.RAW_DATA_DIR)
         self.genes = os.path.join(self.root, genes)
         self.clusters = os.path.join(self.root, clusters)
         self.stages = os.path.join(self.root, stages)
@@ -104,3 +110,21 @@ class DBuilding(object):
                 a = line.rstrip().split('\t')[0]
                 badcell.append(a)
         return badcell
+
+
+def db():
+    flag = os.path.join(settings.BASE_DIR, 'built_.conf')
+    if os.path.exists(flag):
+        with open(flag, 'r') as f:
+            print(f.read())
+        return
+    dbu = DBuilding(PATH_, c.EMB_DATA)
+    dbu.load_genes()
+    dbu.load_clusters()
+    dbu.load_stages()
+    dbu.load_cells()
+    dbu.load_expression()
+    with open(flag, 'w') as f:
+        import time
+        f.write('DATABASE INSERTED: @%s\n'
+                'Do NOT DELETE this config UNLESS need to FLUSH database' % time.ctime())
