@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 
 from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
-from .const import package as c
-from ..statUniversal import eq
-from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.processors import GenericFeaturesProcess
+from PGCAltas.utils.StatExpr.FunctionalDomain.temp_const import package as c
+from PGCAltas.utils.statUniversal import eq
+from PGCAltas.utils.StatExpr.StatProcessor.FeaturesProcessor.processors import GenericFeaturesProcess
 
 
 logger = logging.getLogger("django")

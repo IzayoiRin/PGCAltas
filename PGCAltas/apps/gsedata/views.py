@@ -1,25 +1,26 @@
-from django.shortcuts import render
+from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
 
-# Create your views here.
-
-from gsedata import patch_const
-patch_const()
-from gsedata.misc.features_select import GSEBinDimensionEIMProcess, GSEBinDimensionEIMAnalysis
+__DATA_ROOT__ = 'dataset\GSE120963'
 
 
-def features_screen(flush=False):
-    eim = GSEBinDimensionEIMProcess(r"^E.*")
-    if flush:
-        # dataReader Flushed
-        eim.flushed()
-    # Calculate Equ_importance Integral Matrix
-    eim.execute_eim_process()
-    # Get Analysis Handler
-    aly = GSEBinDimensionEIMAnalysis()
-    anlysis_handler = aly.execute_eim_analysis
-    # Get Selected Expression Matrix and Significant Score Matrix
-    # Get the Accuracy Matrix between Raw Expression and Selected Expression Matrix
-    anlysis_handler("trans_and_sig", "acc_between_select")
+class FeaturesScreenAPIView(GenericAPIView):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from gsedata import patch_const
+        patch_const()
+        from gsedata.workflow import features
+        global features
 
+    # embdata/features/?flush=1
+    def get(self, request):
+        query_dict = request.query_params
+        # TODO: Serializer optim
+        query = {k: eval(v) for k, v in query_dict.items()}
+        features(**query)
+        # eim_mtx_file = os.path.join(__DATA_ROOT__, 'texts', 'RDFBinomialFlow.txt')
+        # with open(eim_mtx_file, 'r', encoding='utf-8') as f:
+        #     text = f.read()
+        # return HttpResponse(text, content_type="text/plain")
+        return Response({"msg": "Finish"})
 
-features_screen(True)

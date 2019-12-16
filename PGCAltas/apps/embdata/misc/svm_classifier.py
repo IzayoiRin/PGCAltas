@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from PGCAltas.utils.StatExpr.DataReader.reader import ReaderLoadError
-from PGCAltas.utils.StatExpr.StaUtills.ClassiferProcessor.trad_classifier import SupportVectorMachineClassifier
+from PGCAltas.utils.StatExpr.StatProcessor.ClassiferProcessor.trad_classifier import SupportVectorMachineClassifier
 from embdata.data_const import DATA_DIR, PKL_FILE, ESTIMATED_EXPR_PKL, SVM_PARAMS
 from embdata.misc.reader import BinomialDataReader
 
@@ -113,7 +113,7 @@ class EMBTASVMProcess(object):
 
     data_reader_class = BinomialDataReader
     classifier_class = EMBTASVMClassifier
-    test_size = 0.6
+    test_size = 0.4
     dimension = ['binomial', ]
 
     def __init__(self, dirname=None, pklfile=None):
@@ -167,7 +167,7 @@ class EMBTASVMProcess(object):
     def get_dataset(self):
         return self.dataset
 
-    def _dumps(self, datframe, dim, name='Estimated%sFlow'):
+    def _dumps(self, datframe, dim, name):
         p1 = os.path.join(self._csv_path, name % dim.title() + '.txt')
         datframe.to_csv(p1, sep='\t', header=True, index=True)
 

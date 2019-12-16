@@ -6,10 +6,10 @@ import pandas as pd
 import pickle
 
 from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
-from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.processors import FeaturesBasicPreProcessor, \
+from PGCAltas.utils.StatExpr.StatProcessor.FeaturesProcessor.processors import FeaturesBasicPreProcessor, \
     FeaturesBasicScreenProcessor
 
-from .const import package as c
+from PGCAltas.utils.StatExpr.FunctionalDomain.temp_const import package as c
 
 
 logger = logging.getLogger("django")

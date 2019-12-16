@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 DATA_DIR = "EMTAB6967"
 FILE_TYPE = r'\.txt'
-PKL_FILE = 'OBJEMTAB696719120912.pkl'
+PKL_FILE = 'OBJEMTAB696719121616.pkl'
 DIMENSIONS = ['binomial', ]
 
 NEG = r"^.*NEG"

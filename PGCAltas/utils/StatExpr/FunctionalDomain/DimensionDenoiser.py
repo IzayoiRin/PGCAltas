@@ -5,9 +5,9 @@ import logging
 import pandas as pd
 
 from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
-from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor import MessProcessesError
-from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.processors import FeatureBasicExtractProcessor
-from .const import package as c
+from PGCAltas.utils.StatExpr.StatProcessor.FeaturesProcessor import MessProcessesError
+from PGCAltas.utils.StatExpr.StatProcessor.FeaturesProcessor.processors import FeatureBasicExtractProcessor
+from PGCAltas.utils.StatExpr.FunctionalDomain.temp_const import package as c
 
 
 logger = logging.getLogger("django")
@@ -72,13 +72,13 @@ class DimensionEstimate(object):
     def estimate_dimension(self):
         raise NotImplementedError
 
-    def _estimate_dimension(self):
+    def _estimate_dimension(self, index=None, columns=None):
         dim = self.kwargs.get('dim')
         self.etp.dumps(
             open(os.path.join(self._pkl_path, '%sEstimator.pkl' % dim.title()), 'wb')
         )
-        header = ['D%s' % i for i in range(self.n_componets)]
-        return pd.DataFrame(self.etp.dataset, index=self.get_labels(), columns=header)
+        header = columns or ['D%s' % i for i in range(self.n_componets)]
+        return pd.DataFrame(self.etp.dataset, index=index or self.etp.get_labels(), columns=header)
 
     def _dumps(self, datframe, dim, name='Estimated%sFlow'):
         p1 = os.path.join(self._csv_path, name % dim.title() + '.txt')
@@ -109,6 +109,7 @@ class DimensionEstimate(object):
                 etp_df = self.estimate_dimension()
             except MessProcessesError as e:
                 logging.critical(e)
+                self.kwargs.get('critical', self.kwargs.setdefault('critical', [])).append('mpe')
                 return
             self.estimated_dat_.append(etp_df)
             self._dumps(etp_df, k)

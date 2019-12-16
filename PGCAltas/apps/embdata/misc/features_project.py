@@ -3,11 +3,11 @@ import os
 import numpy as np
 import pandas as pd
 
-from PGCAltas.utils.StatExpr.StaUtills.FeaturesProcessor.processors import FeatureFilterExtractProcessor, \
+from PGCAltas.utils.StatExpr.StatProcessor.FeaturesProcessor.processors import FeatureFilterExtractProcessor, \
     Feature2DViewerProcessor
-from PGCAltas.utils.StatExpr.analysis_imp import EIMAnalysis
-from PGCAltas.utils.StatExpr.cal_imp_area import GenericEIMProcess
-from PGCAltas.utils.StatExpr.estimate_dimension import DimensionEstimate
+from PGCAltas.utils.StatExpr.FunctionalDomain.EIMPAnalyzer import EIMAnalysis
+from PGCAltas.utils.StatExpr.FunctionalDomain.EIMPCalculator import GenericEIMProcess
+from PGCAltas.utils.StatExpr.FunctionalDomain.DimensionDenoiser import DimensionEstimate
 from embdata.misc.reader import BinomialDataReader
 from embdata.models import GenesInfo, CellsInfo
 from ..data_const import POS, NEG, FILE_TYPE, \
@@ -89,11 +89,18 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.sample_types = None
+        self.neg_tag = None
+        self.pos_tag = None
 
     def resolute_from_expr(self, expr):
         self.labels = expr.label.to_numpy(dtype=np.int8)
         self.sample_types = expr.ctype.to_numpy(dtype='U20')
         self.dataset = expr.iloc[:, 2: -1].copy().to_numpy(dtype=np.int32)
+        whole_tag = expr.loc[:, ('label', 'ctype')].drop_duplicates()
+        self.pos_tag = whole_tag.ctype\
+            .to_numpy(dtype='U20')[whole_tag.label.astype(int) == self.kwargs.get('pos_lab', 1)]
+        self.neg_tag = whole_tag.ctype\
+            .to_numpy(dtype='U20')[whole_tag.label.astype(int) != self.kwargs.get('pos_lab', 1)]
 
         if self.n_componets is None:
             self.n_componets = np.math.floor(
@@ -113,7 +120,15 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
         LDA_PARAMS['n_components'] = self.n_componets
         PCA_PARAMS['n_components'] = self.after_filter
         self.etp(*zip(self.estimate_process, self.estimate_process_params))
-        mtx = self._estimate_dimension()
+
+        labels = self.etp.get_labels()
+        tr = np.array([['tr', 1 if labels[i] in self.pos_tag else 0] for i in self.etp._trno])
+        te = np.array([['te', 1 if labels[i] in self.pos_tag else 0] for i in self.etp._teno])
+        self.etp.dataset = np.hstack([np.vstack([tr, te]), self.etp.dataset])
+        header = ['set', 'label']
+        header.extend(['D%s' % i for i in range(self.n_componets)])
+
+        mtx = self._estimate_dimension(columns=header)
         print("%s Estimate: R[%s*%s] -----> R[%s*%s] supervised_acc=%.6f"
               % (self.kwargs['dim'].title(), *self.dataset.shape, *mtx.shape, self.etp.supervised_acc_)
               )
@@ -132,8 +147,10 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
         return p
 
     def viewer2d(self):
-        labels = self.get_labels()
-        dataset = self.get_dataset()
+        rdataset = self.get_dataset()
+        labels = rdataset.label.to_numpy(dtype=np.int8)
+        title = rdataset.iloc[:, :2]
+        dataset = rdataset.iloc[:, 2:]
         header = ['D0', 'D1']
 
         viewer = Feature2DViewerProcessor()
@@ -149,7 +166,8 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
             # initial tsne-viewer design matrix
             viewer.init_from_data(dataset, labels)
             viewer(method, mparams=(params,))
-            df = pd.DataFrame(viewer.dataset, index=labels, columns=header)
+            df = pd.DataFrame(viewer.dataset, index=rdataset.index, columns=header)
+            df = pd.concat([title, df], axis=1)
             viewer.dumps(
                 open(os.path.join(self._pkl_path, '%sEstimator.pkl' % method.title()), 'wb')
             )
@@ -165,6 +183,8 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
 
     def execute_estimate_process(self, **kwargs):
         super().execute_estimate_process(**kwargs)
+        if self.kwargs.get('critical'):
+            return
         logger.info("Lady's Generating 2D-Viewer ...")
         self.kwargs['viewer'] = 0
         self.viewer2d()

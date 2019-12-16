@@ -59,9 +59,9 @@ ROOT_URLCONF = 'PGCAltas.urls'
 
 # CORS whitelist
 CORS_ORIGIN_WHITELIST = (
-    '127.0.0.1:8080',
-    'localhost:8080',
-    'www.lilab.com:8080',
+    'http://127.0.0.1:8080',
+    'http://localhost:8080',
+    'http://www.lilab.com:8080',
 )
 # allow request with cookies
 CORS_ALLOW_CREDENTIALS = True

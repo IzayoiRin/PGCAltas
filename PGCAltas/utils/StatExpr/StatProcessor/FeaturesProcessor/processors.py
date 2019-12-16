@@ -186,7 +186,7 @@ class FeaturesBasicPreProcessor(GenericFeaturesProcess, BasicPreProcessMixin):
 
     def __call__(self, method, **kwargs):
         if len(method) > 3:
-            raise MessProcessesError("wrong processes queue")
+            raise MessProcessesError("Wrong processes queue")
         self.kwargs = kwargs
         # fit each labels as ONE HOT CODE
         self.fit_encode(method[0], mparams=({'categories': self.kwargs.get('categories', None)}, ))

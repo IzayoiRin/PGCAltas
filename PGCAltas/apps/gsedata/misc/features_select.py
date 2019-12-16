@@ -1,8 +1,7 @@
 import numpy as np
-import pandas as pd
 
-from PGCAltas.utils.StatExpr.cal_imp_area import GenericEIMProcess
-from PGCAltas.utils.StatExpr.analysis_imp import EIMAnalysis
+from PGCAltas.utils.StatExpr.FunctionalDomain.EIMPCalculator import GenericEIMProcess
+from PGCAltas.utils.StatExpr.FunctionalDomain.EIMPAnalyzer import EIMAnalysis
 from gsedata.misc.features_processor import GSEBinDimensionPPFeatures, GSEBinDimensionSLTFeatures
 from gsedata.misc.reader import ReaderFromDimensions
 
@@ -32,7 +31,7 @@ class GSEBinDimensionEIMProcess(GenericEIMProcess):
         self.ppf(self.preprocesses, dim=dimension)
         features = self.reader.features
         self.slp = self.get_screen_processor()
-        # RDF_PARAMS in const.py
+        # RDF_PARAMS in temp_const.py
         self.slp(self.screen_process,
                  mparams=self.screen_process_params,
                  dim=dimension, split=split_tt)
