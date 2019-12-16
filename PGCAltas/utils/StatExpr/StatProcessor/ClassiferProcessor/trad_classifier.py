@@ -41,7 +41,7 @@ class EnsembleFit(object):
         return np.mean(ypre == y)
 
     def roc_(self, y, ypre, **kwargs):
-        keys = ['tpr', 'fpr', 'threshold']
+        keys = ['fpr', 'tpr', 'threshold']
         return dict(zip(keys, roc_curve(y, ypre, **kwargs)))
 
     def auc_(self, y, ypre, **kwargs):

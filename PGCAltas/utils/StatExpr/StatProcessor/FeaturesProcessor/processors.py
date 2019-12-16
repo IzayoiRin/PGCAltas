@@ -250,9 +250,10 @@ class FeaturesBasicScreenProcessor(GenericFeaturesProcess, BasicScreenMixin):
 class BasicExtractMixin(object):
 
     def fit_reduce(self, fit, *fargs, **fkwargs):
-
         if fkwargs.get('supervised'):
-            xtr, xte, ytr, yte = self.train_or_test()
+            xtr, xte = self.dataset[self._trno, :], self.dataset[self._teno, :]
+            labels = self.get_labels()
+            ytr, yte = labels[self._trno], labels[self._teno]
             fit.fit(xtr, ytr)
             acc = accuracy_score(yte, fit.predict(xte))
             setattr(self, 'supervised_acc_', acc)
@@ -273,6 +274,25 @@ class FeatureBasicExtractProcessor(GenericFeaturesProcess, BasicExtractMixin):
         'test_size': 0.3,
         'random_state': 0,
     }
+
+    def __init__(self):
+        super(FeatureBasicExtractProcessor, self).__init__()
+        self._teno, self._trno = None, None
+
+    def init_from_data(self, *initdata):
+        if len(initdata) == 2:
+            self.dataset, self.labels = initdata
+            xtr, xte, ytr, yte = self.train_or_test()
+        elif len(initdata) == 4:
+            xtr, xte, ytr, yte = initdata
+        else:
+            return
+        # record test and train's row numbers
+        self._teno, self._trno = range(ytr.shape[0], ytr.shape[0] + yte.shape[0]), range(ytr.shape[0])
+        # recombination [tr, te]
+        self.dataset = np.vstack([xtr, xte])
+        self.labels = np.hstack([ytr, yte])
+        return self
 
     def train_or_test(self):
         labels = self.get_labels()
