@@ -29,10 +29,17 @@ class EMBTABinomalEIMProcess(GenericEIMProcess):
         self.screen_processor_class.spilter['test_size'] = self.test_size
         return self.screen_processor_class
 
-    def importance_mtx(self, dimension, split_tt=False):
+    def pre_process(self):
         self.ppf = self.get_preprocessor()
         self.ppf(self.preprocesses, categories='auto')
         features = self.reader.features
+        self.reader.dataset = self.ppf.dataset
+        setattr(self.reader, 'encode_labels', self.ppf.labels)
+        self.reader.dumps_as_pickle(fname=self.pklfile)
+        return features
+
+    def importance_mtx(self, dimension, split_tt=False):
+        features = self.pre_process()
         self.slp = self.get_screen_processor()
         self.slp(self.screen_process,
                  mparams=self.screen_process_params,
@@ -95,7 +102,7 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
     def resolute_from_expr(self, expr):
         self.labels = expr.label.to_numpy(dtype=np.int8)
         self.sample_types = expr.ctype.to_numpy(dtype='U20')
-        self.dataset = expr.iloc[:, 2: -1].copy().to_numpy(dtype=np.int32)
+        self.dataset = expr.iloc[:, 2: -1].copy().to_numpy(dtype=np.float32)
         whole_tag = expr.loc[:, ('label', 'ctype')].drop_duplicates()
         self.pos_tag = whole_tag.ctype\
             .to_numpy(dtype='U20')[whole_tag.label.astype(int) == self.kwargs.get('pos_lab', 1)]
@@ -130,7 +137,10 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
 
         mtx = self._estimate_dimension(columns=header)
         print("%s Estimate: R[%s*%s] -----> R[%s*%s] supervised_acc=%.6f"
-              % (self.kwargs['dim'].title(), *self.dataset.shape, *mtx.shape, self.etp.supervised_acc_)
+              % (self.kwargs['dim'].title(),
+                 *self.dataset.shape,
+                 mtx.shape[0], mtx.shape[1]-2,
+                 self.etp.supervised_acc_)
               )
         return mtx
 

@@ -6,6 +6,7 @@ class FeatuersProjectWorkFlow(object):
     def __init__(self, file_name):
         self.file_name = file_name
         self.flush = False
+        self.train = True
         self.test_size = 0.7
         self.eim_choice = list()
 
@@ -17,7 +18,7 @@ class FeatuersProjectWorkFlow(object):
 
         eim.test_size = self.test_size
         # Calculate Equ_importance Integral Matrix
-        eim.execute_eim_process()
+        eim.execute_eim_process(self.train)
         return self
 
     def eim_analysis(self):
@@ -34,9 +35,11 @@ class FeatuersProjectWorkFlow(object):
         fext.execute_estimate_process(**kwargs)
 
 
-def features(flush=False, **kwargs):
-    workflow = FeatuersProjectWorkFlow(r"[A-Za-z]+2_Expr.*")
+def features(flush=False, train=True, **kwargs):
+    # workflow = FeatuersProjectWorkFlow(r"[A-Za-z]+2_Expr.*")
+    workflow = FeatuersProjectWorkFlow(r"([A-Za-z]+2_ExprPOS.*)|([A-Za-z]+3_Expr.*)")
     workflow.flush = flush
+    workflow.train = train
     workflow.test_size = 0.7
     workflow.eim_choice = ["trans_and_sig", "acc_between_select"]
     # n_components=12, after_filter=120, barnes_hut=0.5, test_size=0.4

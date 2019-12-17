@@ -47,13 +47,15 @@ class GenericEIMProcess(object):
             reader = self.data_reader_class(self.dirname, self.filename, **self.rdparams)
             reader.read(header=0, sep='\t', index_col=0).get_ds_and_ls()
             # flush the pkl_file address in memory cache
-            c.PKL_FILE = reader.dumps_as_pickle()
+            self.pklfile = c.PKL_FILE = reader.dumps_as_pickle()
             logger.info('Dumps Ready')
         elif self.pklfile:
             logger.info('Loading from: %s' % self.pklfile)
             reader = self.data_reader_class.init_from_pickle(self.dirname, self.pklfile)
-
         return reader
+
+    def pre_process(self):
+        raise NotImplementedError
 
     def importance_mtx(self, *args, **kwargs):
         raise NotImplementedError
@@ -100,7 +102,7 @@ class GenericEIMProcess(object):
     def flushed(self):
         self.__READER_FLUSHED = True
 
-    def execute_eim_process(self):
+    def execute_eim_process(self, train=True):
         """
         Calculate the Equ-importance Integral Matrix from dataReader built across raw_data or pkl_reader
         Output:
@@ -116,6 +118,15 @@ class GenericEIMProcess(object):
 
         logger.info('%s Complete Ready' % self.reader)
 
+        # Not redefine Selector
+        if not train:
+            # Reflush data_reader must be done with repre-processing
+            if self.__READER_FLUSHED:
+                logger.info("Lady's Preprocessing Data ...")
+                self.pre_process()
+            return
+
+        # Redefine Selector must be done with repre-processing
         for dim in self.dimensions:
             logger.info("Lady's Calculating Importance ...")
 

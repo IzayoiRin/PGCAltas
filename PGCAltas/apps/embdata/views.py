@@ -13,7 +13,7 @@ class FeaturesScreenAPIView(GenericAPIView):
         from embdata.workflow import features
         global features
 
-    # embdata/features/?flush=1&n_components=12&after_filter=120&barnes_hut=0.5&test_size=0.3
+    # embdata/features/?flush=1&train=0&n_components=12&after_filter=120&barnes_hut=0.5&test_size=0.3
     def get(self, request):
         query_dict = request.query_params
         # TODO: Serializer optim

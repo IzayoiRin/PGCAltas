@@ -179,8 +179,8 @@ class EIMAnalysis(object):
 
         # original features dataset
         fitter.kwargs['dim'] = dim
+        fitter.init_from_data(self.reader.dataset, self.reader.encode_labels)
         xtr, xte, ytr, yte = fitter.train_or_test()
-
         # significance features selected dataset
         sid = thd_df[thd_df.SIGNIFY == True].IDX.to_numpy(dtype=np.int32)
         sxtr, sxte = xtr[:, sid], xte[:, sid]
