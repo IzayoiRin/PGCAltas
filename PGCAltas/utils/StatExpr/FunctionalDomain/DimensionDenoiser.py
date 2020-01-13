@@ -66,6 +66,10 @@ class DimensionEstimate(object):
 
     def get_estimate_processor(self):
         etp_cls = self.get_estimate_processor_class()
+        # receive two kinds of params:
+        # params1: [dataset, labels] len==2
+        # params2: [xtr, xte, ytr, yte] len==4
+        # params1 will be departed by default test_size as shape like params2
         etp = etp_cls().init_from_data(self.get_dataset(), self.get_labels())
         return etp
 

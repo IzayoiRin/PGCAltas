@@ -33,8 +33,11 @@ class EMBTABinomalEIMProcess(GenericEIMProcess):
         self.ppf = self.get_preprocessor()
         self.ppf(self.preprocesses, categories='auto')
         features = self.reader.features
+        # record firstly passing data
         self.reader.dataset = self.ppf.dataset
         setattr(self.reader, 'encode_labels', self.ppf.labels)
+        # push to historic stack as the recording of preprocessed transforming
+        self.reader.historic_trans["preprocessed"] = (self.reader.dataset, self.reader.encode_labels)
         self.reader.dumps_as_pickle(fname=self.pklfile)
         return features
 
@@ -78,6 +81,11 @@ class EMBTABinomalEIMAnalysis(EIMAnalysis):
         merge = np.concatenate([self.reader.labels.reshape(-1, 1), ctype.reshape(-1, 1), sigds], axis=1)
         title = np.hstack([['label', 'ctype'], sid])
         return merge, None, title
+
+    def set_reader_data(self, data):
+        self.reader.dataset = data[0]
+        self.reader.historic_trans["sigscreened"] = (data[0], None)
+        self.reader.dumps_as_pickle(fname=self.pklfile)
 
 
 class EMBTABinomalDimensionEstimate(DimensionEstimate):
@@ -128,6 +136,7 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
         PCA_PARAMS['n_components'] = self.after_filter
         self.etp(*zip(self.estimate_process, self.estimate_process_params))
 
+        # recombinate design matrix departed as training set and test set
         labels = self.etp.get_labels()
         tr = np.array([['tr', 1 if labels[i] in self.pos_tag else 0] for i in self.etp._trno])
         te = np.array([['te', 1 if labels[i] in self.pos_tag else 0] for i in self.etp._teno])

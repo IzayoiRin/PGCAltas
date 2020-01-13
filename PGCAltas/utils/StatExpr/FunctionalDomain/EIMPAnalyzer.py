@@ -61,6 +61,9 @@ class EIMAnalysis(object):
             val = pickle.load(f)
         return val
 
+    def set_reader_data(self, data):
+        raise NotImplementedError
+
     def transform_expr_and_sig_score(self):
         """
         Get the significant marked EIM score matrix and transform original expr matrix to significant one
@@ -70,10 +73,12 @@ class EIMAnalysis(object):
             .\texts\
                 \Expr*Flow.txt & \SigScore*Flow.txt
         """
+        data = list()
         for k in self.dimensions:
             logger.info("Working on Dimension@%s" % k.upper())
             df_score = self.__load__(c.IMPKL[k])
             score, expr = self.select_signify(df_score)
+            data.append(expr)
 
             p1 = os.path.join(self.__csv_path, 'Expr%sFlow.txt' % k.title())
             expr.to_csv(p1, sep='\t', header=True, index=False)
@@ -86,6 +91,8 @@ class EIMAnalysis(object):
 
             p4 = os.path.join(self.__pkl_path, 'SigScore%sFlow.pkl' % k.title())
             score.to_pickle(p4)
+
+        self.set_reader_data(data)
 
     def select_signify(self, df):
         n = df.shape[0]

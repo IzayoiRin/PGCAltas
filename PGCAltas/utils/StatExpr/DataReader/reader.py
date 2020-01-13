@@ -66,6 +66,8 @@ class DataReaderBase(object):
         self.labels = list()
 
         self.__flushed = False
+        # historic transformed hash stack
+        self.historic_trans = dict()
 
     def read(self, **kwargs):
         for f in self.files:
@@ -106,8 +108,10 @@ class DataReaderBase(object):
             p = os.path.join(self.pkl_path, name)
             with open(p, 'wb') as f:
                 pickle.dump(self, f, -1)
+            # record denovo pklfile's name
+            setattr(self, 'pklname', name)
             print('Done')
-            return name
+            return
 
         for attrname, pklname in pklkwargs.items():
             name = fname or '%s%s.pkl' % (pklname, t)
@@ -115,7 +119,6 @@ class DataReaderBase(object):
             with open(p, 'wb') as f:
                 pickle.dump(getattr(self, attrname), f, -1)
         print('Done')
-        return name
 
     def loads_from_pickle(self, **pklkwargs):
         for attrname, pklname in pklkwargs.items():
@@ -182,6 +185,8 @@ class DataReader(DataReaderBase):
     def get_ds_and_ls(self):
         self.dataset = np.concatenate(self.dataframes, axis=0)
         self.labels = np.hstack(self.labels_list)
+        # push to historic stack as the recording of original transforming
+        self.historic_trans['original'] = (self.dataset, self.labels)
 
 
 def _example():

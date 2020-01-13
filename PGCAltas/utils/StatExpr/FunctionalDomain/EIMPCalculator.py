@@ -47,7 +47,8 @@ class GenericEIMProcess(object):
             reader = self.data_reader_class(self.dirname, self.filename, **self.rdparams)
             reader.read(header=0, sep='\t', index_col=0).get_ds_and_ls()
             # flush the pkl_file address in memory cache
-            self.pklfile = c.PKL_FILE = reader.dumps_as_pickle()
+            reader.dumps_as_pickle()
+            self.pklfile = c.PKL_FILE = reader.pklname
             logger.info('Dumps Ready')
         elif self.pklfile:
             logger.info('Loading from: %s' % self.pklfile)

@@ -39,3 +39,5 @@ class ReaderFromDimensions(DataReaderBase):
         self.dataset = np.concatenate(self.dataframes, axis=0)
         self.llabels = np.hstack(self.labels_list_l)
         self.tlabels = np.hstack(self.labels_list_t)
+        # push to historic stack as the recording of original transforming
+        self.historic_trans['original'] = (self.dataset, [self.tlabels, self.llabels])

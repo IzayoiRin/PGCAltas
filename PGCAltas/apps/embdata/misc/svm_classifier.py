@@ -145,6 +145,7 @@ class EMBTASVMProcess(object):
         return val
 
     def resolute_from_expr(self, expr):
+        # TODO: overwrite adapot new extraction matrix
         self.dataset = expr.to_numpy()
         self.labels = expr.index.to_numpy(dtype=np.int8)
 
@@ -193,6 +194,7 @@ class EMBTASVMProcess(object):
             time.sleep(0.001)
             # boost fitting
             svm.adaboost(n_estimator, rec_frequency)
+            # TODO: OPTIONS: whether record svm model
             svm.dumps(
                 open(os.path.join(self._pkl_path, '%sSVMClassifier.pkl' % k.title()), 'wb')
             )
