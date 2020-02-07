@@ -110,7 +110,7 @@ class DataReaderBase(object):
                 pickle.dump(self, f, -1)
             # record denovo pklfile's name
             setattr(self, 'pklname', name)
-            print('Done')
+            print('Pickled: Done')
             return
 
         for attrname, pklname in pklkwargs.items():
@@ -140,8 +140,8 @@ class DataReaderBase(object):
         raise NotImplementedError
 
     def __str__(self):
-        return "dataReader@{name}_Non_data" \
-            if self.dataset == [] \
+        return "dataReader@{name}_Non_STData".format(name=self.path.split('/')[-1]) \
+            if isinstance(self.dataset, list) \
             else "dataReader@{name}_R[{row} * {col}]".format(name=self.path.split('/')[-1],
                                                              row=self.dataset.shape[0],
                                                              col=self.dataset.shape[1])

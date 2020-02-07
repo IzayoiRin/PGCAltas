@@ -38,6 +38,7 @@ class DimensionEstimate(object):
         return self.data_reader_class
 
     def get_data_reader(self):
+        # TODO: overwritten for validator: return reader with 'sigscreened' version and splitted row_no
         dr_cls = self.get_data_reader_class()
         reader = dr_cls.init_from_pickle(self.dirname, self.pklfile)
         return reader
@@ -98,7 +99,6 @@ class DimensionEstimate(object):
         self._pkl_path, self._csv_path = self.get_file_path()
 
         logger.info('Load dataReader: %s' % self.reader)
-
         self.kwargs = kwargs
         self.n_componets = kwargs.get('n_components', None)
 
@@ -106,7 +106,8 @@ class DimensionEstimate(object):
             logger.info("Lady's Estimating Dimension ...")
 
             self.kwargs['dim'] = k
-            expr = self.__load__(c.SIGEXPR_PKL[k])
+            # expr = self.__load__(c.SIGEXPR_PKL[k])
+            expr = self.reader.dataset
             self.resolute_from_expr(expr)
 
             try:
@@ -117,3 +118,10 @@ class DimensionEstimate(object):
                 return
             self.estimated_dat_.append(etp_df)
             self._dumps(etp_df, k)
+        # update reader
+        # list: [ estimated_dat_dim1, estimated_dat_dim2, ...]
+        # estimated_dat_dim: set / label / D0 / ..../ Dn
+        self.reader.dataset = self.estimated_dat_
+        # push to historic transformed stack
+        self.reader.historic_trans['extracted'] = (self.estimated_dat_, None)
+        self.reader.dumps_as_pickle(fname=self.pklfile)

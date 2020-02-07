@@ -36,11 +36,24 @@ class FeatuersProjectWorkFlow(object):
 
 
 def features(flush=False, train=True, **kwargs):
-    # workflow = FeatuersProjectWorkFlow(r"[A-Za-z]+2_Expr.*")
-    workflow = FeatuersProjectWorkFlow(r"([A-Za-z]+2_ExprPOS.*)|([A-Za-z]+3_Expr.*)")
+    workflow = FeatuersProjectWorkFlow(r"[A-Za-z]+2_Expr.*")
+    # workflow = FeatuersProjectWorkFlow(r"([A-Za-z]+2_ExprPOS.*)|([A-Za-z]+3_Expr.*)")
     workflow.flush = flush
     workflow.train = train
     workflow.test_size = 0.7
     workflow.eim_choice = ["trans_and_sig", "acc_between_select"]
     # n_components=12, after_filter=120, barnes_hut=0.5, test_size=0.4
     workflow.eim().eim_analysis().estimate(**kwargs)
+
+
+class ValidationWorkFlow(object):
+
+    def __init__(self):
+        pass
+
+    def estimate(self, **kwargs):
+        fext = EMBTABinomalDimensionEstimate()
+
+
+def validations():
+    pass

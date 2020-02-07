@@ -150,7 +150,7 @@ class EMBTASVMProcess(object):
         self.labels = expr.index.to_numpy(dtype=np.int8)
 
     def get_classifier_class(self):
-        self.classifier_class.test_size = self.test_size
+        # self.classifier_class.test_size = self.test_size
         return self.classifier_class
 
     def get_classifier(self):
@@ -184,9 +184,12 @@ class EMBTASVMProcess(object):
         self.kwargs = kwargs
         n_estimator = kwargs.pop("n_estimator", 10)
         rec_frequency = kwargs.pop("record_freq", None)
-        for k in self.dimension:
+        for idx, k in enumerate(self.dimension):
             self.kwargs['dim'] = k
-            expr = self.__load__(ESTIMATED_EXPR_PKL[k])
+            # expr = self.__load__(ESTIMATED_EXPR_PKL[k])
+            # replaced by reader.dataset
+            # which set by last procession as a list containing whole dimension's extracted matrix
+            expr = self.reader.dataset[idx]
             self.resolute_from_expr(expr)
             # init svm classifier
             svm = self.get_classifier()

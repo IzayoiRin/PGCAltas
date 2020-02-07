@@ -6,10 +6,12 @@ from sklearn.ensemble import RandomForestClassifier
 
 DATA_DIR = "EMTAB6967"
 FILE_TYPE = r'\.txt'
+# TEST DATASET
+PKL_FILE = 'OBJEMTAB696720020710.pkl'
 # SMALL DATASET
 # PKL_FILE = 'OBJEMTAB696719121616_small.pkl'
 # LARGE DATASET
-PKL_FILE = 'OBJEMTAB696719121710_large.pkl'
+# PKL_FILE = 'OBJEMTAB696719121710_large.pkl'
 DIMENSIONS = ['binomial', ]
 
 NEG = r"^.*NEG"

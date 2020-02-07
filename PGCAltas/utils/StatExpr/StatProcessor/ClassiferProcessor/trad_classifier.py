@@ -1,7 +1,7 @@
 import pickle
 
 import numpy as np
-from sklearn.metrics import roc_curve, roc_auc_score, average_precision_score
+from sklearn.metrics import roc_curve, auc, roc_auc_score, average_precision_score
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
@@ -45,6 +45,7 @@ class EnsembleFit(object):
         return dict(zip(keys, roc_curve(y, ypre, **kwargs)))
 
     def auc_(self, y, ypre, **kwargs):
+        # return auc(fpr, tpr)
         return roc_auc_score(y, ypre, **kwargs)
 
     def ap_(self, y, ypre, **kwargs):

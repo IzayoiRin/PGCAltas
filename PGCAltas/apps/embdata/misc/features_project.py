@@ -38,6 +38,7 @@ class EMBTABinomalEIMProcess(GenericEIMProcess):
         setattr(self.reader, 'encode_labels', self.ppf.labels)
         # push to historic stack as the recording of preprocessed transforming
         self.reader.historic_trans["preprocessed"] = (self.reader.dataset, self.reader.encode_labels)
+        print("Recording PreProcessed data")
         self.reader.dumps_as_pickle(fname=self.pklfile)
         return features
 
@@ -83,6 +84,7 @@ class EMBTABinomalEIMAnalysis(EIMAnalysis):
         return merge, None, title
 
     def set_reader_data(self, data):
+        print("Recording SigScreened data")
         self.reader.dataset = data[0]
         self.reader.historic_trans["sigscreened"] = (data[0], None)
         self.reader.dumps_as_pickle(fname=self.pklfile)
@@ -126,11 +128,17 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
             np.unique(self.labels).shape[0] * (1 - FILTER_RATES)
         ))
 
+        if not self.kwargs.get('training', True):
+            if hasattr(self.reader, 'tr_rows') and hasattr(self.reader, 'te_rows'):
+                self.dataset = self.dataset[self.reader.tr_rows], self.dataset[self.reader.te_rows]
+                self.labels = self.labels[self.reader.tr_rows], self.labels[self.reader.te_rows]
+
     def get_estimate_processor_class(self):
         self.estimate_processor_class.spilter['test_size'] = self.test_size
         return self.estimate_processor_class
 
     def estimate_dimension(self):
+        # dataset splitted as train-test
         self.etp = self.get_estimate_processor()
         LDA_PARAMS['n_components'] = self.n_componets
         PCA_PARAMS['n_components'] = self.after_filter
@@ -200,9 +208,11 @@ class EMBTABinomalDimensionEstimate(DimensionEstimate):
             if hasattr(viewer.fit_, 'explained_variance_ratio_'):
                 print("sum explained variance: %s" % viewer.fit_.explained_variance_ratio_.sum())
 
-    def execute_estimate_process(self, **kwargs):
+    def execute_estimate_process(self, viewer2d=True, **kwargs):
         super().execute_estimate_process(**kwargs)
         if self.kwargs.get('critical'):
+            return
+        if not viewer2d:
             return
         logger.info("Lady's Generating 2D-Viewer ...")
         self.kwargs['viewer'] = 0

@@ -1,40 +1,89 @@
-class ValidatorBase(object):
+import numpy as np
 
-    class Mata:
-
-        models = []
-        input_foos = []
-        output_foos = []
-
-        def __new__(cls, *args, **kwargs):
-            inflow = None
-            tempout = None
-            for i in range(len(cls.models)):
-                model, infoo, outfoo = cls.models[i], cls.input_foos[i], cls.output_foos[i]
-                if inflow is None:
-                    inflow = getattr(model, infoo)
-                    tempout = getattr(model, outfoo)
-                    continue
+from PGCAltas.utils.StatExpr.DataReader.reader import ReaderLoadError
+from embdata.misc.reader import BinomialDataReader
 
 
-    def validate_flow(self):
-        return self.Mata()
+class GenericValidator(object):
 
-    def set_flow(self, *pipe):
-        for model, infoo, outfoo in pipe:
-            self.Mata.models.append(model)
-            self.Mata.input_foos.append(infoo)
-            self.Mata.output_foos.append(outfoo)
+    data_reader_class = BinomialDataReader
+    model = None
+
+    def __init__(self, dirname=None, pklfile=None):
+        self.dirname = dirname
+        self.pklfile = pklfile
+
+        self.reader = None
+        self._pkl_path, self._csv_path = None, None
+
+        self.dataset = None
+        self.labels = None
+
+    def get_reader_class(self):
+        return self.data_reader_class
+
+    def get_reader(self):
+        reader = self.get_reader_class().init_from_pickle(self.dirname, self.pklfile)
+        return reader
+
+    def get_file_path(self):
+        pkl_path, csv_path = self.reader.pkl_path, self.reader.csv_path
+        return pkl_path, csv_path
+
+    def resolute_from_reader(self):
+        # dataset, labels M*N
+        self.dataset, self.labels = self.reader.dataset, self.reader.labels
+
+    def validate(self):
+        self.reader = self.get_reader()
+        if self.reader is None:
+            raise ReaderLoadError("Can't load dataReader: %s" % self.data_reader_class.__name__)
+        self._pkl_path, self._csv_path = self.get_file_path()
+        self.resolute_from_reader()
+        if not hasattr(self, 'validation_alg'):
+            return
+        diter = self.validation_alg()
+        import copy
+        reader = copy.copy(self.reader)
+        for xy in diter:
+            reader.tr_rows, reader.te_rows = xy
+            print(reader.dataset[reader.tr_rows, :].shape)
 
 
-class Validator(ValidatorBase):
+class SFoldCrossMixin(object):
 
-    pass
+    placeholder = None
+
+    def init_queue(self):
+        # dataset M*N
+        m, n = self.dataset.shape
+        b, a = divmod(m, self.s)
+        # get row index
+        idx = list(range(m))
+        np.random.shuffle(idx)
+        if a:
+            idx.extend([self.placeholder for _ in range(self.s - a)])
+        queue = np.array(idx).reshape(self.s, -1).tolist()
+        while self.placeholder in queue[-1]:
+            queue[-1].remove(self.placeholder)
+        return queue
+
+    def validation_alg(self):
+        queue = self.init_queue()
+        for _ in range(len(queue)):
+            te_rows = queue.pop(0)
+            tr_rows = np.hstack(queue)
+            yield te_rows, tr_rows
+            queue.append(te_rows)
 
 
-v = Validator()
-v.set_flow(
-    (1, lambda x: x+1, None),
-    (2, None, lambda x: x),
-)
-print(v.validate_flow())
+class SFoldCrossValidator(GenericValidator, SFoldCrossMixin):
+
+    s = 10
+
+
+if __name__ == '__main__':
+    DATA_DIR = "EMTAB6967"
+    PKL_FILE = 'OBJEMTAB696719121616_small.pkl'
+    sfc_validator = SFoldCrossValidator(DATA_DIR, PKL_FILE)
+    sfc_validator.validate()
