@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 import pickle
 
-from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
+from PGCAltas.utils.StatExpr.DataReader.reader import DataReader
+from PGCAltas.utils.errors import ReaderLoadError
 from PGCAltas.utils.StatExpr.StatProcessor.FeaturesProcessor.processors import FeaturesBasicPreProcessor, \
     FeaturesBasicScreenProcessor
 
@@ -172,10 +173,3 @@ class GenericEIMProcess(object):
             df.to_csv(df_pc, sep='\t', header=True, index=False)
 
         logger.info('CAVED!!!')
-
-        # if not train:
-        #     # Reflush data_reader must be done with repre-processing
-        #     if self.__READER_FLUSHED:
-        #         logger.info("Lady's Preprocessing Data ...")
-        #         self.pre_process()
-        #     return

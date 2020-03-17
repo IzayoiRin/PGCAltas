@@ -1,0 +1,2 @@
+CONV_DIM = 2
+CONV_BACTH_NOR = False

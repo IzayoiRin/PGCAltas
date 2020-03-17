@@ -6,16 +6,28 @@ from sklearn.ensemble import RandomForestClassifier
 
 DATA_DIR = "EMTAB6967"
 FILE_TYPE = r'\.txt'
+
+# SMALL DATASET
+RAW_DATA = r'[A-Za-z]+2_Expr.*'
+
+# LARGE DATASET
+# RAW_DATA = r'[A-Za-z]+3_Expr.*'
+
 # TEST DATASET
 PKL_FILE = 'OBJEMTAB696720020710.pkl'
+
 # SMALL DATASET
 # PKL_FILE = 'OBJEMTAB696719121616_small.pkl'
+
 # LARGE DATASET
 # PKL_FILE = 'OBJEMTAB696719121710_large.pkl'
+
 DIMENSIONS = ['binomial', ]
 
 NEG = r"^.*NEG"
 POS = r"^.*POS"
+
+VALIDATED_FILE = r'OBJEMTAB6967\d+.pkl'
 
 """
 CONSTANT for analysis IMPORTANCE AREA
@@ -28,6 +40,7 @@ FIT_PKL = {
     'binomial': "RDFBinomialClassifier.pkl:SigScoreBinomialFlow.pkl",
 }
 CLASSIFIER_MODEL = RandomForestClassifier
+# THRESHOLD = -1.0
 THRESHOLD = 0.6
 
 
@@ -67,6 +80,10 @@ PCA_PARAMS = {
 
 FILTER_RATES = 0.2
 COMPONENTS_RATES = 0.75
+
+ENSEMBLE_LDA_CLASSIFIER_PKL = {
+    "binomial": "LDABinomialEnsembleClassifier.pkl",
+}
 
 # 2D-Viewer params
 TSNE_PARAMS = {
@@ -116,4 +133,9 @@ SVM_PARAMS = {
     'decision_function_shape': 'ovr',
     'random_state': 0,
     'cache_size': 200
+}
+
+
+ENSEMBLE_SVM_CLASSIFIER_PKL = {
+    "binomial": "BinomialSVMClassifier.pkl",
 }

@@ -5,7 +5,8 @@ import logging
 import numpy as np
 import pandas as pd
 
-from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
+from PGCAltas.utils.StatExpr.DataReader.reader import DataReader
+from PGCAltas.utils.errors import ReaderLoadError
 from PGCAltas.utils.StatExpr.FunctionalDomain.temp_const import package as c
 from PGCAltas.utils.statUniversal import eq
 from PGCAltas.utils.StatExpr.StatProcessor.FeaturesProcessor.processors import GenericFeaturesProcess
@@ -216,7 +217,7 @@ class EIMAnalysis(object):
 
         return ret
 
-    def execute_eim_analysis(self, *method):
+    def execute_eim_analysis(self, *method, callback=None):
         self.reader = self.get_data_reader()
         if self.reader is None:
             raise ReaderLoadError("Can't load dataReader: %s" % self.data_reader_class.__name__)
@@ -231,5 +232,8 @@ class EIMAnalysis(object):
                         ' '.join([i.title() for i in foo.__name__.split('_')]))
 
             foo()
+
+        if callback:
+            callback(self.reader)
 
         logger.info("CAVED!!!")

@@ -4,14 +4,7 @@ import numpy as np
 from sklearn.metrics import roc_curve, auc, roc_auc_score, average_precision_score
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-
-
-class ModelProcessError(Exception):
-    pass
-
-
-class CannotMoveError(Exception):
-    pass
+from PGCAltas.utils.errors import CannotMoveError, FailInitialedError, ModelProcessError, CannotAnalysisError
 
 
 class EnsembleFit(object):
@@ -143,10 +136,30 @@ class GenericModelClassifier(object):
         self.ypre_ = None
         self.ytru_ = None
 
-    def initial_from_data(self, dataset, labels):
-        self.dataset = dataset
-        self.labels = labels
-        self._split_test_or_train()
+    def initial_from_data(self, dataset, labels, training=True):
+        """
+        training -- 0 [testing model]:
+            dataset: testing data
+            labels: testing samples' Name or Code
+        training -- 1 [training model] or -1 [validating model]:
+            dataset: initial data
+            labels: data's labels
+        """
+        # from testing set
+        if not training:
+            self.xte, self.yte = dataset, labels
+            self.xtr, self.ytr = None, None
+            return
+
+        # from training set
+        if isinstance(dataset, tuple) and isinstance(labels, tuple):
+            self.xtr, self.xte = dataset
+            self.ytr, self.yte = labels
+        elif not isinstance(dataset, tuple) and not isinstance(labels, tuple):
+            self.dataset, self.labels = dataset, labels
+            self._split_test_or_train()
+        else:
+            raise FailInitialedError('Wrong init-data format')
 
     def get_model(self):
         return self.model_class()
@@ -223,4 +236,7 @@ class SupportVectorMachineClassifier(GenericModelClassifier, AnalysisMixin):
         fn = getattr(self.fit, fn, None)
         if fn is None:
             raise AttributeError
-        return fn(self.ytru_, ypre, **kwargs)
+        try:
+            return fn(self.ytru_, ypre, **kwargs)
+        except Exception as e:
+            raise CannotAnalysisError(e)

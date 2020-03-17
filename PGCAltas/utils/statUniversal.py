@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.model_selection import train_test_split as ts
 
 
 class UniError(Exception):
@@ -84,3 +85,39 @@ def split_arr(arr, seq):
     if e < n:
         ret.append(arr[e:])
     return ret
+
+
+def layer_train_test_split(dataset, labels, test_size, random_state=None):
+    layers = np.unique(labels)
+    ret = [np.argwhere(labels == l).reshape(-1) for l in layers]
+    test, train = list(), list()
+    for idxs in ret:
+        n = idxs.shape[0]
+        # layer with only one sample, copy itself
+        if n == 1:
+            idxs = np.hstack([idxs, idxs])
+            n = 2
+
+        # now, every layer with at least 2 samples, then cal testN
+        testN = np.floor(n * test_size)
+        # if testN == 0, test set must have one sample, thus testN must be 1
+        if testN == 0:
+            testN += 1
+        # now, every layer with at least 2 samples and its testN all larger than 0
+        if random_state is None:
+            np.random.seed(random_state)
+        # random select from WHOLE SET idxs
+        testingSet = np.random.choice(idxs, size=int(testN), replace=False)
+        test.append(testingSet)
+        # the diff set between WHOLE SET idxs and SUB SET testingSet
+        trainingSet = np.setdiff1d(idxs, testingSet)
+        train.append(trainingSet)
+
+    test, train = np.hstack(test), np.hstack(train)
+    return dataset[train, :], dataset[test, :], labels[train], labels[test]
+
+
+def train_test_split(mode='U'):
+    mapping = {'U': ts, 'L': layer_train_test_split}
+    if mapping.get(mode):
+        return mapping[mode]

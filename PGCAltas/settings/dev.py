@@ -187,6 +187,8 @@ STATIC_URL = '/static/'
 
 DATASET_URL = '/dataset/'
 
+TH_DATASET = 'torch_dat'
+
 
 # DB Expression table partition config
 EXPR_DB_PARTITION = {"p0": [4],

@@ -11,9 +11,9 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import TruncatedSVD
 # import sklearn.feature_selection as fs
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
 
-from . import MessProcessesError
+from PGCAltas.utils.statUniversal import train_test_split
+from PGCAltas.utils.errors import MessProcessesError, FailInitialedError
 
 
 class FeaturesProcessBase(object):
@@ -226,17 +226,9 @@ class FeaturesBasicScreenProcessor(GenericFeaturesProcess, BasicScreenMixin):
     spilter = {'test_size': 0.3,
                'random_state': 0}
 
-    # selector = {
-    #     'RANDOM_FOREST': fs.SelectFromModel
-    # }
-
     def train_or_test(self):
         labels = self.get_labels()
-        return train_test_split(self.dataset, labels, **self.spilter)
-
-    # def get_selector(self, method):
-    #     selector = self.selector.get(method, None)
-    #     return selector
+        return train_test_split(mode='L')(self.dataset, labels, **self.spilter)
 
     def __call__(self, method, mparams=(), **kwargs):
         # execute(self, method, *fargs, mparams=(), **fkwargs)
@@ -249,18 +241,31 @@ class FeaturesBasicScreenProcessor(GenericFeaturesProcess, BasicScreenMixin):
 
 class BasicExtractMixin(object):
 
+    # def fit_reduce(self, fit, *fargs, **fkwargs):
+    #     if fkwargs.get('supervised'):
+    #         xtr, xte = self.dataset[self._trno, :], self.dataset[self._teno, :]
+    #         labels = self.get_labels()
+    #         ytr, yte = labels[self._trno], labels[self._teno]
+    #         # fitting LDA model
+    #         fit.fit(xtr, ytr)
+    #         acc = accuracy_score(yte, fit.predict(xte))
+    #         setattr(self, 'supervised_acc_', acc)
+    #     else:
+    #         fit.fit(self.dataset)
+    #     self.dataset = fit.transform(self.dataset)
+    #     return self
+
     def fit_reduce(self, fit, *fargs, **fkwargs):
+        xtr, ytr = fargs
+
         if fkwargs.get('supervised'):
-            xtr, xte = self.dataset[self._trno, :], self.dataset[self._teno, :]
-            labels = self.get_labels()
-            ytr, yte = labels[self._trno], labels[self._teno]
+            # training set
             fit.fit(xtr, ytr)
-            acc = accuracy_score(yte, fit.predict(xte))
-            setattr(self, 'supervised_acc_', acc)
-        else:
-            fit.fit(self.dataset)
-        self.dataset = fit.transform(self.dataset)
-        return self
+            return fit
+
+        fit.fit(xtr)
+        xtr = fit.transform(xtr)
+        return [xtr, ytr]
 
 
 class FeatureBasicExtractProcessor(GenericFeaturesProcess, BasicExtractMixin):
@@ -271,7 +276,7 @@ class FeatureBasicExtractProcessor(GenericFeaturesProcess, BasicExtractMixin):
     }
 
     spilter = {
-        'test_size': 0.3,
+        'test_size': 0.2,
         'random_state': 0,
     }
 
@@ -279,14 +284,21 @@ class FeatureBasicExtractProcessor(GenericFeaturesProcess, BasicExtractMixin):
         super(FeatureBasicExtractProcessor, self).__init__()
         self._teno, self._trno = None, None
 
-    def init_from_data(self, *initdata):
-        if len(initdata) == 2:
-            self.dataset, self.labels = initdata
+    def init_from_data(self, dataset, labels, training=True):
+        # from testing set
+        if not training:
+            self.dataset, self.labels = dataset, labels
+            return self
+
+        # from training set
+        if isinstance(dataset, tuple) and isinstance(labels, tuple):
+            xtr, xte = dataset
+            ytr, yte = labels
+        elif not isinstance(dataset, tuple) and not isinstance(labels, tuple):
+            self.dataset, self.labels = dataset, labels
             xtr, xte, ytr, yte = self.train_or_test()
-        elif len(initdata) == 4:
-            xtr, xte, ytr, yte = initdata
         else:
-            return
+            raise FailInitialedError('Wrong init-data format')
         # record test and train's row numbers
         self._teno, self._trno = range(ytr.shape[0], ytr.shape[0] + yte.shape[0]), range(ytr.shape[0])
         # recombination [tr, te]
@@ -296,7 +308,34 @@ class FeatureBasicExtractProcessor(GenericFeaturesProcess, BasicExtractMixin):
 
     def train_or_test(self):
         labels = self.get_labels()
-        return train_test_split(self.dataset, labels, **self.spilter)
+        return train_test_split(mode='L')(self.dataset, labels, **self.spilter)
+
+    # def layer_samples(self, labels):
+    #     layers = np.unique(labels)
+    #     ret = [np.argwhere(labels == l).reshape(-1) for l in layers]
+    #     test, train = list(), list()
+    #     for idxs in ret:
+    #         n = idxs.shape[0]
+    #         # layer with only one sample, copy itself
+    #         if n == 1:
+    #             idxs = np.hstack([idxs, idxs])
+    #             n = 2
+    #         # now, every layer with at least 2 samples, then cal testN
+    #         testN = np.floor(n * self.spilter.get('test_size'))
+    #         # if testN == 0, test set must have one sample, thus testN must be 1
+    #         if testN == 0:
+    #             testN += 1
+    #         # now, every layer with at least 2 samples and its testN all larger than 0
+    #         np.random.seed(self.spilter.get('random_state'))
+    #         # random select from WHOLE SET idxs
+    #         testingSet = np.random.choice(idxs, size=int(testN))
+    #         test.append(testingSet)
+    #         # the diff set between WHOLE SET idxs and SUB SET testingSet
+    #         trainingSet = np.setdiff1d(idxs, testingSet)
+    #         train.append(trainingSet)
+    #
+    #     test, train = np.hstack(test), np.hstack(train)
+    #     return self.dataset[train, :], self.dataset[test, :], labels[train], labels[test]
 
     def __call__(self, method, mparams=(), **kwargs):
         self.kwargs = kwargs
@@ -307,6 +346,22 @@ class FeatureFilterExtractProcessor(FeatureBasicExtractProcessor):
 
     def __call__(self, *methods, **kwargs):
         """
+        init_from_data:
+        train --1:
+            self.dataset, self.labels ----> whole
+            self._teno, self._trno ----> rows
+        train --0:
+            self.dataset, self.labels ----> vd
+            self._teno, self._trno ----> None
+
+        __call__:
+
+        train --1:
+            fit_reduce(tr) ----> fit
+        train --0:
+            load_fit() ----> fit
+        fit ----> predict(te)
+
         :param methods: [(filter, flt_params), (reducer, rdc_params)]
         :param kwargs:
         :return:
@@ -318,9 +373,47 @@ class FeatureFilterExtractProcessor(FeatureBasicExtractProcessor):
         ori_features = self.dataset.shape[1]
         flag = ori_features > flt_params['n_components'] > rdc_params['n_components'] > 0
         if not flag:
-            raise MessProcessesError("Wrong processes params")
-        self.fit_reduce(flt, mparams=(flt_params,), supervised=False)\
-            .fit_reduce(rdc, mparams=(rdc_params,), supervised=True)
+            raise MessProcessesError(
+                "Wrong processes params: features[%d], filter[%d], components[%d]" %
+                (ori_features, flt_params['n_components'], rdc_params['n_components'])
+            )
+
+        def _fitting(xtr, xte, ytr, yte):
+            tr_set = xtr, ytr
+            te_set = xte, yte
+
+            # PCA reduce training set, return PCA reduced data
+            tr_re = self.fit_reduce(flt, *tr_set, mparams=(flt_params,), supervised=False)  # type: tuple
+            # LDA fitting training set, return fitted model
+            fit = self.fit_reduce(rdc, *tr_re, mparams=(rdc_params,), supervised=True)
+
+            # PCA reduce testing set and LDA predicting testing set, return PCA reduced data
+            te_re = _predict(fit, *te_set)
+            # LDA reduce whole set
+            self.dataset = fit.transform(np.vstack([tr_re[0], te_re[0]]))
+            return fit
+
+        def _predict(fit, *te_set):
+            """PCA reduce testing set and LDA predicting testing set, return PCA reduced data"""
+            re = self.fit_reduce(flt, *te_set, mparams=(flt_params,), supervised=False)  # type: tuple
+            ypr = fit.predict(re[0])
+            acc = accuracy_score(re[1], ypr)
+            setattr(self, 'supervised_acc_', acc)
+            return re
+
+        # training model, return fitted model
+        if kwargs.get('training', True):
+            xtr, xte = self.dataset[self._trno, :], self.dataset[self._teno, :]
+            labels = self.get_labels()
+            ytr, yte = labels[self._trno], labels[self._teno]
+            return _fitting(xtr, xte, ytr, yte)
+
+        # testing model, return None
+        else:
+            fit = kwargs.get('loaded_fit')
+            if fit:
+                re = _predict(fit, self.dataset, self.get_labels())
+                self.dataset = fit.transform(re[0])
 
 
 class Viewer2DMixin(object):
