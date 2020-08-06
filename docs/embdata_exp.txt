@@ -1,0 +1,71 @@
+EMBDATA_APIs:
+
+    SMALL DATA(1007)-Guider2
+
+    for NEW Training data:
+
+    [passed]1. initial DataReader then training RDF Selector to screening dataset's features and transformed
+        (url)POST: /embdata/fitting/features/?flush=1&training=1&test_sz=0.2
+            post_body:
+                filename: [A-Za-z]+2_Expr.*
+            response_body:
+                msg: Finish: 0216-XuUDkFCHEeqZtyjxDhxCxQ==
+
+    [passed]2. fit ENSEMBLE Classifier from EXISTED training dataset
+        (url)POST: /embdata/fitting/classify/?training=1&n_components=12&after_filter=88&barnes_hut=0.5&n_estimator=132&record_freq=10
+            post_body:
+                reader: 0216-XuUDkFCHEeqZtyjxDhxCxQ==
+
+        3. VALIDATING
+        (url)POST: /embdata/validations/?n_components=12&after_filter=88&barnes_hut=0.5&n_estimator=132&record_freq=10
+            post_body:
+                reader: 0216-XuUDkFCHEeqZtyjxDhxCxQ==
+
+    [passed]*1. Used for redefined RDF Selector from EXISTED data and transformed
+        (url)POST: /embdata/fitting/features/?flush=0&training=1&test_sz=0.2
+            post_body:
+                filename: 0216-XuUDkFCHEeqZtyjxDhxCxQ==
+
+    [passed]*2. A FAST way to screen dataset's feature from EXISTED Selector
+        (url)POST: /embdata/fitting/features/?flush=0&training=0&test_sz=0.2
+            post_body:
+                filename: 0216-XuUDkFCHEeqZtyjxDhxCxQ==
+
+
+    {{{ WHOLE WORKFLOW APIs }}}
+
+    [passed]1. Only for NEW Training data, Used for redefined ENSEMBLE CLASSIFIER from EXISTED data
+        (url)POST: /embdata/fitting/?flush=1&trscreen=1&trclassify=1&test_sz=0.2&n_components=12&after_filter=88&barnes_hut=0.5&n_estimator=132&record_freq=10
+            post_body:
+                filename: [A-Za-z]+2_Expr.*
+
+    [passed]2. Only for Screened NEW Training data, Used for redefined ENSEMBLE CLASSIFIER from EXISTED data
+        (url)POST: /embdata/fitting/?flush=1&trscreen=0&trclassify=1&test_sz=0.2&n_components=12&after_filter=88&barnes_hut=0.5&n_estimator=132&record_freq=10
+            post_body:
+                filename: [A-Za-z]+2_Expr.*
+
+    [passed]3. Used for redefined RDF Selector from EXISTED data, and redefined ENSEMBLE CLASSIFIER from EXISTED data
+        (url)POST: /embdata/fitting/?flush=0&trscreen=1&trclassify=1&test_sz=0.2&n_components=12&after_filter=88&barnes_hut=0.5&n_estimator=132&record_freq=10
+            post_body:
+                filename: 0212-O3QVME1uEeq1oijxDhxCxQ==
+
+    PREDICTING DATA -GuiderPre
+
+    for NEW TESTING data:
+        1. initial DataReader then EXISTED RDF Selector to screening dataset's features and transformed
+        (url)POST: /embdata/fitting/features/?flush=1&training=0&test_sz=0.2
+            post_body:
+                filename: [A-Za-z]+Pre_Expr.*
+
+            response_body:
+                msg: Finish:
+
+    [passed]2. predict from EXISTED ENSEMBLE Classifier
+        (url)POST: /embdata/fitting/classify/?training=0&n_components=12&after_filter=88&barnes_hut=0.5&n_estimator=132&record_freq=10
+            post_body:
+                reader: 0212-O3QVME1uEeq1oijxDhxCxQ==
+
+    [passed]*2. A FAST way to screen dataset's feature from EXISTED Selector
+        (url)POST: /embdata/fitting/features/?flush=0&training=0&test_sz=0.2
+            post_body:
+                filename: 0212-O3QVME1uEeq1oijxDhxCxQ==

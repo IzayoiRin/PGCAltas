@@ -5,7 +5,8 @@ import logging
 import numpy as np
 import pandas as pd
 
-from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
+from PGCAltas.utils.StatExpr.DataReader.reader import DataReader
+from PGCAltas.utils.errors import ReaderLoadError
 from PGCAltas.utils.StatExpr.FunctionalDomain.temp_const import package as c
 from PGCAltas.utils.statUniversal import eq
 from PGCAltas.utils.StatExpr.StatProcessor.FeaturesProcessor.processors import GenericFeaturesProcess
@@ -61,6 +62,9 @@ class EIMAnalysis(object):
             val = pickle.load(f)
         return val
 
+    def set_reader_data(self, data):
+        raise NotImplementedError
+
     def transform_expr_and_sig_score(self):
         """
         Get the significant marked EIM score matrix and transform original expr matrix to significant one
@@ -70,10 +74,12 @@ class EIMAnalysis(object):
             .\texts\
                 \Expr*Flow.txt & \SigScore*Flow.txt
         """
+        data = list()
         for k in self.dimensions:
             logger.info("Working on Dimension@%s" % k.upper())
             df_score = self.__load__(c.IMPKL[k])
             score, expr = self.select_signify(df_score)
+            data.append(expr)
 
             p1 = os.path.join(self.__csv_path, 'Expr%sFlow.txt' % k.title())
             expr.to_csv(p1, sep='\t', header=True, index=False)
@@ -86,6 +92,8 @@ class EIMAnalysis(object):
 
             p4 = os.path.join(self.__pkl_path, 'SigScore%sFlow.pkl' % k.title())
             score.to_pickle(p4)
+
+        self.set_reader_data(data)
 
     def select_signify(self, df):
         n = df.shape[0]
@@ -179,7 +187,7 @@ class EIMAnalysis(object):
 
         # original features dataset
         fitter.kwargs['dim'] = dim
-        fitter.init_from_data(self.reader.dataset, self.reader.encode_labels)
+        fitter.init_from_data(*self.reader.historic_trans["preprocessed"])
         xtr, xte, ytr, yte = fitter.train_or_test()
         # significance features selected dataset
         sid = thd_df[thd_df.SIGNIFY == True].IDX.to_numpy(dtype=np.int32)
@@ -209,7 +217,7 @@ class EIMAnalysis(object):
 
         return ret
 
-    def execute_eim_analysis(self, *method):
+    def execute_eim_analysis(self, *method, callback=None):
         self.reader = self.get_data_reader()
         if self.reader is None:
             raise ReaderLoadError("Can't load dataReader: %s" % self.data_reader_class.__name__)
@@ -224,5 +232,8 @@ class EIMAnalysis(object):
                         ' '.join([i.title() for i in foo.__name__.split('_')]))
 
             foo()
+
+        if callback:
+            callback(self.reader)
 
         logger.info("CAVED!!!")

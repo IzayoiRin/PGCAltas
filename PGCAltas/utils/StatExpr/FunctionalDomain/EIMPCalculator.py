@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 import pickle
 
-from PGCAltas.utils.StatExpr.DataReader.reader import DataReader, ReaderLoadError
+from PGCAltas.utils.StatExpr.DataReader.reader import DataReader
+from PGCAltas.utils.errors import ReaderLoadError
 from PGCAltas.utils.StatExpr.StatProcessor.FeaturesProcessor.processors import FeaturesBasicPreProcessor, \
     FeaturesBasicScreenProcessor
 
@@ -47,7 +48,8 @@ class GenericEIMProcess(object):
             reader = self.data_reader_class(self.dirname, self.filename, **self.rdparams)
             reader.read(header=0, sep='\t', index_col=0).get_ds_and_ls()
             # flush the pkl_file address in memory cache
-            self.pklfile = c.PKL_FILE = reader.dumps_as_pickle()
+            reader.dumps_as_pickle()
+            self.pklfile = c.PKL_FILE = reader.pklname
             logger.info('Dumps Ready')
         elif self.pklfile:
             logger.info('Loading from: %s' % self.pklfile)
@@ -105,6 +107,26 @@ class GenericEIMProcess(object):
     def execute_eim_process(self, train=True):
         """
         Calculate the Equ-importance Integral Matrix from dataReader built across raw_data or pkl_reader
+
+        param -train controlled whether doing the whole Calculating flow,
+        however, param -flush controlled whether rollback the data's version
+
+        train -- 0 flush -- 1 Only for NEW Testing data
+        not redefine Selector but flushed data from raw file, thus must be preprocessed
+        NOT Necessary to rollback data's version [unitest passed]
+
+        train -- 0 flush -- 0 A way passing this stage
+        nether redefine Selector nor flushed data, thus must be preprocessed
+        Necessary to rollback data's version [unitest passed]
+
+        train -- 1 flush -- 0 Used for redefined RDF Selector from EXISTED data
+        redefine Selector but not flushed data, thus must be preprocessed and fitting RDF score
+        Necessary to rollback data's version [unitest passed]
+
+        train -- 1 flush -- 1 Only for NEW Training data
+        redefine Selector and flushed data, thus must be preprocessed and fitting RDF score
+        NOT Necessary to rollback data's version [unitest passed]
+
         Output:
             .\pickles
                 \OBJ*.pkl
@@ -116,18 +138,22 @@ class GenericEIMProcess(object):
         if self.reader is None:
             raise ReaderLoadError("Can't load dataReader: %s" % self.data_reader_class.__name__)
 
+        # reader's data rollback to original version
+        if not self.__READER_FLUSHED:
+            self.reader.dataset, self.reader.labels = self.reader.historic_trans['original']
+            self.reader.historic_trans = {"original": (self.reader.dataset, self.reader.labels)}
+
         logger.info('%s Complete Ready' % self.reader)
 
         # Not redefine Selector
         if not train:
-            # Reflush data_reader must be done with repre-processing
-            if self.__READER_FLUSHED:
-                logger.info("Lady's Preprocessing Data ...")
-                self.pre_process()
+            logger.info("Lady's Preprocessing Data ...")
+            self.pre_process()
             return
 
         # Redefine Selector must be done with repre-processing
         for dim in self.dimensions:
+
             logger.info("Lady's Calculating Importance ...")
 
             try:
@@ -135,7 +161,6 @@ class GenericEIMProcess(object):
             except Exception as e:
                 logging.critical(e)
                 return
-
             mtx_p = os.path.join(self.reader.pkl_path, 'RDF%sScore.pkl' % dim.title())
             pickle.dump(mtx, open(mtx_p, 'wb'))
 
